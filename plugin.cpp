@@ -26,6 +26,19 @@ typedef uint32_t (*cast_t)(RE::Actor* caster, RE::SpellItem* spel, const RE::NiP
 typedef uint32_t (*cast_CustomPos_t)(RE::Actor* caster, RE::SpellItem* spel, const RE::NiPoint3& start_pos,
                                      const ProjectileRot& rot);
 
+RE::EffectSetting* getAVEffectSetting(RE::MagicItem* mgitem) {
+    using func_t = decltype(getAVEffectSetting);
+//    REL::Relocation<func_t> func{11194};
+    REL::Relocation<func_t> func {REL::ID(11194)};
+    return func(mgitem);
+}
+
+RE::Effect* GetCostiestEffect(RE::MagicItem* spel, RE::MagicSystem::Delivery type, char ignorearea) {
+    using func_t = decltype(GetCostiestEffect);
+    REL::Relocation<func_t> func{11216};
+    return func(spel, type, ignorearea);
+}
+
 float SkyrimSE_c51f70(RE::NiPoint3* dir) {
     using func_t = decltype(SkyrimSE_c51f70);
     REL::Relocation<func_t> func{REL::ID(68820)};
@@ -45,10 +58,6 @@ auto rot_at(RE::NiPoint3 dir) {
 }
 
 auto rot_at(const RE::NiPoint3& from, const RE::NiPoint3& to) { return rot_at(to - from); }
-
-
-// This line is needed for CastSpellFromHand() to compile, might no longer be needed in the future? ---> This is a dtor.
-// RE::Projectile::LaunchData::~LaunchData() {}
 
 ///// Actual new functions /////
 
@@ -78,9 +87,9 @@ void CastIngredient(RE::StaticFunctionTag*, RE::Actor* akSource, RE::IngredientI
 // Papyrus: Function CastSpellFromHand(Actor akSource, Spell akSpell, ObjectReference akTarget, int PositionInt) global native
 // Cast a spell from the hand defined in PositionInt at the akTarget.
 void CastSpellFromHand(RE::StaticFunctionTag*, RE::Actor* akSource, RE::SpellItem* akSpell, RE::TESObjectREFR* akTarget,
-                       std::int32_t PositionInt, RE::BGSProjectile* akProjectile) {
+                       std::int32_t PositionInt) {
     
-    RE::Projectile::LaunchData ldata;
+    logger::info("CastSpellFromHand Function called.");
 
     auto NodePosition = akSource
                             ->GetMagicCaster(PositionInt == 0 ? RE::MagicSystem::CastingSource::kLeftHand
@@ -88,17 +97,34 @@ void CastSpellFromHand(RE::StaticFunctionTag*, RE::Actor* akSource, RE::SpellIte
                             ->GetMagicNode()
                             ->world.translate;
 
+    logger::info("CastSpellFromHand: NodePosition initialised.");
+
     auto rot = rot_at(NodePosition, akTarget->GetPosition());
+
+    logger::info("CastSpellFromHand: rot initialised.");
+
+ //   auto eff = GetCostiestEffect(akSpell, RE::MagicSystem::Delivery::kAimed, false).spel;
+    auto eff = akSpell->GetCostliestEffectItem();
+
+    logger::info("CastSpellFromHand: eff initialised.");
+
+    auto mgef = getAVEffectSetting(akSpell);
+
+    logger::info("CastSpellFromHand: Variables initialised.");
+
+    RE::Projectile::LaunchData ldata;
+
+    logger::info("CastSpellFromHand: Launchdata initialised. Attempting to fill fields.");
 
     ldata.origin = NodePosition;
     ldata.contactNormal = {0.0f, 0.0f, 0.0f};
-    ldata.projectileBase = akProjectile;
+    ldata.projectileBase = mgef->data.projectileBase;
     ldata.shooter = akSource;
     ldata.combatController = akSource->GetActorRuntimeData().combatController;
     ldata.weaponSource = nullptr;
     ldata.ammoSource = nullptr;
-    ldata.angleZ = rot.z;      // this needs the z value of Projectile rot, afaik. Not sure if the syntax is correct.
-    ldata.angleX = rot.x;      // this needs the x value of Projectile rot, afaik. Not sure if the syntax is correct.
+    ldata.angleZ = rot.z; 
+    ldata.angleX = rot.x; 
     ldata.unk50 = nullptr;
     ldata.desiredTarget = akTarget;
     ldata.unk60 = 0.0f;
@@ -109,7 +135,7 @@ void CastSpellFromHand(RE::StaticFunctionTag*, RE::Actor* akSource, RE::SpellIte
     ldata.unk7C = 0;                                   
     ldata.enchantItem = nullptr;
     ldata.poison = nullptr;
-    ldata.area = 0;
+    ldata.area = eff->GetArea();
     ldata.power = 1.0f;
     ldata.scale = 1.0f;
     ldata.alwaysHit = false;
@@ -120,9 +146,17 @@ void CastSpellFromHand(RE::StaticFunctionTag*, RE::Actor* akSource, RE::SpellIte
     ldata.deferInitialization = false;
     ldata.forceConeOfFire = false;
 
+    logger::info("CastSpellFromHand: Launchdata fields successfully filled.");
+
     RE::BSPointerHandle<RE::Projectile> handle;
     RE::Projectile::Launch(&handle, ldata);
+
+    logger::info("CastSpellFromHand: Projectile launched.");
 }
+
+// This line is needed for CastSpellFromHand() to compile, might no longer be needed in the future? ---> This is a dtor.
+
+RE::Projectile::LaunchData::~LaunchData() {}
 
 bool PapyrusFunctions(RE::BSScript::IVirtualMachine* vm) {
     vm->RegisterFunction("CastEnchantment", "ANDR_PapyrusFunctions", CastEnchantment);
