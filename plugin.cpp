@@ -33,11 +33,11 @@ RE::EffectSetting* getAVEffectSetting(RE::MagicItem* mgitem) {
     return func(mgitem);
 }
 
-RE::Effect* GetCostiestEffect(RE::MagicItem* spel, RE::MagicSystem::Delivery type, char ignorearea) {
-    using func_t = decltype(GetCostiestEffect);
-    REL::Relocation<func_t> func{11216};
-    return func(spel, type, ignorearea);
-}
+//RE::Effect* GetCostiestEffect(RE::MagicItem* spel, RE::MagicSystem::Delivery type, char ignorearea) {
+//    using func_t = decltype(GetCostiestEffect);
+//    REL::Relocation<func_t> func{11216};
+//    return func(spel, type, ignorearea);
+//}
 
 float SkyrimSE_c51f70(RE::NiPoint3* dir) {
     using func_t = decltype(SkyrimSE_c51f70);
@@ -126,7 +126,8 @@ void CastSpellFromHand(RE::StaticFunctionTag*, RE::Actor* akSource, RE::SpellIte
     ldata.angleZ = rot.z; 
     ldata.angleX = rot.x; 
     ldata.unk50 = nullptr;
-    ldata.desiredTarget = akTarget;
+//    ldata.desiredTarget = akTarget;
+    ldata.desiredTarget = nullptr;
     ldata.unk60 = 0.0f;
     ldata.unk64 = 0.0f;
     ldata.parentCell = akSource->GetParentCell();
