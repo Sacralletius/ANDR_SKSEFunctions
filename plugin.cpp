@@ -89,32 +89,19 @@ void CastIngredient(RE::StaticFunctionTag*, RE::Actor* akSource, RE::IngredientI
 void CastSpellFromHand(RE::StaticFunctionTag*, RE::Actor* akSource, RE::SpellItem* akSpell, RE::TESObjectREFR* akTarget,
                        std::int32_t PositionInt) {
     
-    logger::info("CastSpellFromHand Function called.");
-
-    auto NodePosition = akSource
+     auto NodePosition = akSource
                             ->GetMagicCaster(PositionInt == 0 ? RE::MagicSystem::CastingSource::kLeftHand
                                                               : RE::MagicSystem::CastingSource::kRightHand)
                             ->GetMagicNode()
                             ->world.translate;
 
-    logger::info("CastSpellFromHand: NodePosition initialised.");
-
     auto rot = rot_at(NodePosition, akTarget->GetPosition());
 
-    logger::info("CastSpellFromHand: rot initialised.");
-
- //   auto eff = GetCostiestEffect(akSpell, RE::MagicSystem::Delivery::kAimed, false).spel;
     auto eff = akSpell->GetCostliestEffectItem();
-
-    logger::info("CastSpellFromHand: eff initialised.");
 
     auto mgef = getAVEffectSetting(akSpell);
 
-    logger::info("CastSpellFromHand: Variables initialised.");
-
     RE::Projectile::LaunchData ldata;
-
-    logger::info("CastSpellFromHand: Launchdata initialised. Attempting to fill fields.");
 
     ldata.origin = NodePosition;
     ldata.contactNormal = {0.0f, 0.0f, 0.0f};
@@ -147,12 +134,8 @@ void CastSpellFromHand(RE::StaticFunctionTag*, RE::Actor* akSource, RE::SpellIte
     ldata.deferInitialization = false;
     ldata.forceConeOfFire = false;
 
-    logger::info("CastSpellFromHand: Launchdata fields successfully filled.");
-
     RE::BSPointerHandle<RE::Projectile> handle;
     RE::Projectile::Launch(&handle, ldata);
-
-    logger::info("CastSpellFromHand: Projectile launched.");
 }
 
 // This line is needed for CastSpellFromHand() to compile, might no longer be needed in the future? ---> This is a dtor.
