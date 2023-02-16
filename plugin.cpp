@@ -90,12 +90,11 @@ void CastSpellFromHand(RE::StaticFunctionTag*, RE::Actor* akSource, RE::SpellIte
 
     auto rot = rot_at(NodePosition, akTarget->GetPosition());
 
-
     ldata.origin = NodePosition;
     ldata.contactNormal = {0.0f, 0.0f, 0.0f};
     ldata.projectileBase = akProjectile;
     ldata.shooter = akSource;
-    ldata.combatController = akSource->combatController; // This one gives an error.
+    ldata.combatController = akSource->GetActorRuntimeData().combatController;
     ldata.weaponSource = nullptr;
     ldata.ammoSource = nullptr;
     ldata.angleZ = rot.z;      // this needs the z value of Projectile rot, afaik. Not sure if the syntax is correct.
@@ -107,7 +106,7 @@ void CastSpellFromHand(RE::StaticFunctionTag*, RE::Actor* akSource, RE::SpellIte
     ldata.parentCell = akSource->GetParentCell();
     ldata.spell = akSpell;
     ldata.castingSource = RE::MagicSystem::CastingSource::kOther;
-    ldata.unk7C = 0.0f;                                   
+    ldata.unk7C = 0;                                   
     ldata.enchantItem = nullptr;
     ldata.poison = nullptr;
     ldata.area = 0;
@@ -139,3 +138,20 @@ SKSEPluginLoad(const SKSE::LoadInterface* skse) {
     SKSE::GetPapyrusInterface()->Register(PapyrusFunctions);
     return true;
 }
+
+// With the dtor from line 51 commented out, I get this error when trying to build. How can I fix this?
+// 
+//>------ Build All started: Project: SKSE_Template_HelloWorld, Configuration: debug ------
+//  [1/2] Building CXX object CMakeFiles\ANDR_PapyrusFunctions.dir\plugin.cpp.obj
+//  [2/2] Linking CXX shared library ANDR_PapyrusFunctions.dll
+//  FAILED: ANDR_PapyrusFunctions.dll ANDR_PapyrusFunctions.lib 
+//  cmd.exe /C "cd . && "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -E vs_link_dll --intdir=CMakeFiles\ANDR_PapyrusFunctions.dir --rc=C:\PROGRA~2\WI3CF2~1\10\bin\100220~1.0\x64\rc.exe --mt=C:\PROGRA~2\WI3CF2~1\10\bin\100220~1.0\x64\mt.exe --manifests  -- C:\PROGRA~1\MIB055~1\2022\COMMUN~1\VC\Tools\MSVC\1434~1.319\bin\Hostx64\x64\link.exe /nologo CMakeFiles\ANDR_PapyrusFunctions.dir\cmake_pch.cxx.obj CMakeFiles\ANDR_PapyrusFunctions.dir\plugin.cpp.obj CMakeFiles\ANDR_PapyrusFunctions.dir\__ANDR_PapyrusFunctionsPlugin.cpp.obj  /out:ANDR_PapyrusFunctions.dll /implib:ANDR_PapyrusFunctions.lib /pdb:ANDR_PapyrusFunctions.pdb /dll /version:0.0 /machine:x64 /debug /INCREMENTAL  vcpkg_installed\x64-windows-static-md\debug\lib\CommonLibSSE.lib  vcpkg_installed\x64-windows-static-md\debug\lib\spdlogd.lib  vcpkg_installed\x64-windows-static-md\debug\lib\fmtd.lib  Version.lib  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib  && cmd.exe /C "cd /D "H:\Github Code\SKSE_Template_HelloWorld\build\debug" && C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -noprofile -executionpolicy Bypass -file "H:/Github Code/vcpkg/scripts/buildsystems/msbuild/applocal.ps1" -targetBinary "H:/Github Code/SKSE_Template_HelloWorld/build/debug/ANDR_PapyrusFunctions.dll" -installedDir "H:/Github Code/SKSE_Template_HelloWorld/build/debug/vcpkg_installed/x64-windows-static-md/debug/bin" -OutVariable out && cd /D "H:\Github Code\SKSE_Template_HelloWorld\build\debug" && "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -E make_directory "G:\SSE Mods\SSE MO\Base Directory\mods/ANDR_PapyrusFunctions/SKSE/Plugins" && "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -E copy_if_different "H:/Github Code/SKSE_Template_HelloWorld/build/debug/ANDR_PapyrusFunctions.dll" "G:\SSE Mods\SSE MO\Base Directory\mods/ANDR_PapyrusFunctions/SKSE/Plugins/ANDR_PapyrusFunctions.dll" && cd /D "H:\Github Code\SKSE_Template_HelloWorld\build\debug" && "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -E copy_if_different "H:/Github Code/SKSE_Template_HelloWorld/build/debug/ANDR_PapyrusFunctions.pdb" "G:\SSE Mods\SSE MO\Base Directory\mods/ANDR_PapyrusFunctions/SKSE/Plugins/ANDR_PapyrusFunctions.pdb"""
+//  LINK Pass 1: command "C:\PROGRA~1\MIB055~1\2022\COMMUN~1\VC\Tools\MSVC\1434~1.319\bin\Hostx64\x64\link.exe /nologo CMakeFiles\ANDR_PapyrusFunctions.dir\cmake_pch.cxx.obj CMakeFiles\ANDR_PapyrusFunctions.dir\plugin.cpp.obj CMakeFiles\ANDR_PapyrusFunctions.dir\__ANDR_PapyrusFunctionsPlugin.cpp.obj /out:ANDR_PapyrusFunctions.dll /implib:ANDR_PapyrusFunctions.lib /pdb:ANDR_PapyrusFunctions.pdb /dll /version:0.0 /machine:x64 /debug /INCREMENTAL vcpkg_installed\x64-windows-static-md\debug\lib\CommonLibSSE.lib vcpkg_installed\x64-windows-static-md\debug\lib\spdlogd.lib vcpkg_installed\x64-windows-static-md\debug\lib\fmtd.lib Version.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:CMakeFiles\ANDR_PapyrusFunctions.dir/intermediate.manifest CMakeFiles\ANDR_PapyrusFunctions.dir/manifest.res" failed (exit code 1120) with the following output:
+//     Creating library ANDR_PapyrusFunctions.lib and object ANDR_PapyrusFunctions.exp
+// H:\Github Code\SKSE_Template_HelloWorld\build\debug\plugin.cpp.obj : error LNK2019: unresolved external symbol "public: virtual __cdecl RE::Projectile::LaunchData::~LaunchData(void)" (??1LaunchData@Projectile@RE@@UEAA@XZ) referenced in function "void __cdecl CastSpellFromHand(struct RE::StaticFunctionTag *,class RE::Actor *,class RE::SpellItem *,class RE::TESObjectREFR *,int,class RE::BGSProjectile *)" (?CastSpellFromHand@@YAXPEAUStaticFunctionTag@RE@@PEAVActor@2@PEAVSpellItem@2@PEAVTESObjectREFR@2@HPEAVBGSProjectile@2@@Z)
+//  
+// H:\Github Code\SKSE_Template_HelloWorld\build\debug\ANDR_PapyrusFunctions.dll : fatal error LNK1120: 1 unresolved externals
+//  
+//  ninja: build stopped: subcommand failed.
+//
+// Build All failed.
