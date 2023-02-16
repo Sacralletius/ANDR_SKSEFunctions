@@ -17,8 +17,6 @@ void SetupLog() {
 
 ////// Instructions from Fenix to get the position and rotation for CastSpellFromHand() function.
 
-// ============ Step 1 ============
-// copied from FenixProjectilesAPI.h in https://github.com/fenix31415/MagicDeflectionAPI.
 struct ProjectileRot {
     float x, z;
 };
@@ -28,36 +26,6 @@ typedef uint32_t (*cast_t)(RE::Actor* caster, RE::SpellItem* spel, const RE::NiP
 typedef uint32_t (*cast_CustomPos_t)(RE::Actor* caster, RE::SpellItem* spel, const RE::NiPoint3& start_pos,
                                      const ProjectileRot& rot);
 
-// ============ Step 2 ============
-
-static cast_CustomPos_t _API_cast_CustomPos_t;
-
-uint32_t API_cast_CustomPos_t(RE::Actor* caster, RE::SpellItem* spel, const RE::NiPoint3& start_pos,
-                              const ProjectileRot& rot) {
-    return (*_API_cast_CustomPos_t)(caster, spel, start_pos, rot);
-}
-
-// ============ Step 3 ============
-// This apparently needs another DLL?
-// I'm not sure how this will work. AFAIK this references to typedefs in step 1.
-
-namespace Subscribers {
-    void init() {
-        _API_cast_CustomPos_t = (cast_CustomPos_t)GetProcAddress(pluginHandle, "FenixProjectilesAPI_cast_CustomPos");
-    }
-}
-
-// ============ Step 4 ============
-static void SKSEMessageHandler(SKSE::MessagingInterface::Message* message) {
-    switch (message->type) {
-        case SKSE::MessagingInterface::kDataLoaded:
-            Subscribers::init();
-
-            break;
-    }
-}
-
-// ============ Step 7 ============
 float SkyrimSE_c51f70(RE::NiPoint3* dir) {
     using func_t = decltype(SkyrimSE_c51f70);
     REL::Relocation<func_t> func{REL::ID(68820)};
@@ -77,6 +45,7 @@ auto rot_at(RE::NiPoint3 dir) {
 }
 
 auto rot_at(const RE::NiPoint3& from, const RE::NiPoint3& to) { return rot_at(to - from); }
+
 
 // This line is needed for CastSpellFromHand() to compile, might no longer be needed in the future? ---> This is a dtor.
 // RE::Projectile::LaunchData::~LaunchData() {}
@@ -111,53 +80,49 @@ void CastIngredient(RE::StaticFunctionTag*, RE::Actor* akSource, RE::IngredientI
 void CastSpellFromHand(RE::StaticFunctionTag*, RE::Actor* akSource, RE::SpellItem* akSpell, RE::TESObjectREFR* akTarget,
                        std::int32_t PositionInt, RE::BGSProjectile* akProjectile) {
     
+    RE::Projectile::LaunchData ldata;
+
     auto NodePosition = akSource
                             ->GetMagicCaster(PositionInt == 0 ? RE::MagicSystem::CastingSource::kLeftHand
                                                               : RE::MagicSystem::CastingSource::kRightHand)
                             ->GetMagicNode()
                             ->world.translate;
 
-    auto rot = rot_at(NodePosition);
+    auto rot = rot_at(NodePosition, akTarget->GetPosition());
 
-    API_cast_CustomPos_t(akSource, akSpell, NodePosition, rot);
 
-//    old code, kept as backup.
+    ldata.origin = NodePosition;
+    ldata.contactNormal = {0.0f, 0.0f, 0.0f};
+    ldata.projectileBase = akProjectile;
+    ldata.shooter = akSource;
+    ldata.combatController = akSource->combatController; // This one gives an error.
+    ldata.weaponSource = nullptr;
+    ldata.ammoSource = nullptr;
+    ldata.angleZ = rot.z;      // this needs the z value of Projectile rot, afaik. Not sure if the syntax is correct.
+    ldata.angleX = rot.x;      // this needs the x value of Projectile rot, afaik. Not sure if the syntax is correct.
+    ldata.unk50 = nullptr;
+    ldata.desiredTarget = akTarget;
+    ldata.unk60 = 0.0f;
+    ldata.unk64 = 0.0f;
+    ldata.parentCell = akSource->GetParentCell();
+    ldata.spell = akSpell;
+    ldata.castingSource = RE::MagicSystem::CastingSource::kOther;
+    ldata.unk7C = 0.0f;                                   
+    ldata.enchantItem = nullptr;
+    ldata.poison = nullptr;
+    ldata.area = 0;
+    ldata.power = 1.0f;
+    ldata.scale = 1.0f;
+    ldata.alwaysHit = false;
+    ldata.noDamageOutsideCombat = false;
+    ldata.autoAim = false;
+    ldata.unk9F = false;
+    ldata.useOrigin = true;
+    ldata.deferInitialization = false;
+    ldata.forceConeOfFire = false;
 
-//    RE::Projectile::LaunchData ldata;
-
-//    ldata.origin = NodePosition;
-//    ldata.shooter = akSource;
-//    ldata.desiredTarget = akTarget;
-//    ldata.spell = akSpell;
-//    ldata.castingSource =
-//        PositionInt == 0 ? RE::MagicSystem::CastingSource::kLeftHand : RE::MagicSystem::CastingSource::kRightHand;
-//    ldata.projectileBase = akProjectile;
-// 
-// 
-//   remove all nullptr's.
-// 
-//   ldata.contactNormal = nullptr; // doesn't like nullptr
-//    ldata.combatController = nullptr;
-//    ldata.weaponSource = nullptr;
-//    ldata.ammoSource = nullptr; //Might be useful to experiment with ammo...
-//    ldata.unk50 = nullptr;
-//    ldata.unk60 = 0.f;
-//    ldata.unk64 = 0.f;
-//    ldata.enchantItem = nullptr;
-//    ldata.poison = nullptr;
-//    ldata.area = 0;
-//    ldata.power = 1.f;
-//    ldata.scale = 1.f;
-//    ldata.alwaysHit = false;
-//    ldata.noDamageOutsideCombat = false;
-//    ldata.autoAim = false;
-//    ldata.unk9F = false;
-//    ldata.useOrigin = true;
-//    ldata.deferInitialization = false;
-//    ldata.forceConeOfFire = false;
-    
-//     RE::BSPointerHandle<RE::Projectile> handle;
-//     RE::Projectile::Launch(&handle, ldata);
+    RE::BSPointerHandle<RE::Projectile> handle;
+    RE::Projectile::Launch(&handle, ldata);
 }
 
 bool PapyrusFunctions(RE::BSScript::IVirtualMachine* vm) {
