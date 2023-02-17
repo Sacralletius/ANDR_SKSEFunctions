@@ -79,16 +79,21 @@ void CastIngredient(RE::StaticFunctionTag*, RE::Actor* akSource, RE::IngredientI
 }
 // Papyrus: Function CastSpellFromHand(Actor akSource, Spell akSpell, ObjectReference akTarget, int PositionInt) global native
 // Cast a spell from the hand defined in PositionInt at the akTarget.
-void CastSpellFromHand(RE::StaticFunctionTag*, RE::Actor* akSource, RE::SpellItem* akSpell, RE::TESObjectREFR* akTarget,
-                       std::int32_t PositionInt) {
+void CastSpellFromRef(RE::StaticFunctionTag*, RE::Actor* akSource, RE::SpellItem* akSpell, RE::TESObjectREFR* akTarget,
+                      RE::TESObjectREFR* akOriginRef) {
     
-     auto NodePosition = akSource
-                            ->GetMagicCaster(PositionInt == 0 ? RE::MagicSystem::CastingSource::kLeftHand
-                                                              : RE::MagicSystem::CastingSource::kRightHand)
-                            ->GetMagicNode()
-                            ->world.translate;
+//    auto NodePosition = akSource
+//                            ->GetMagicCaster(PositionInt == 0 ? RE::MagicSystem::CastingSource::kLeftHand
+//                                                              : RE::MagicSystem::CastingSource::kRightHand)
+//                            ->GetMagicNode()
+//                            ->world.translate;
+    auto NodePosition = akOriginRef->GetPosition();
+
+    logger::info("Position: X is {}, Y is {}, Z is {}.", NodePosition.x, NodePosition.y, NodePosition.z);
 
     auto rot = rot_at(NodePosition, akTarget->GetPosition());
+
+    logger::info("Rotation: X is {}, Z is {}.", rot.x, rot.z);
 
     auto eff = akSpell->GetCostliestEffectItem();
 
@@ -139,7 +144,7 @@ bool PapyrusFunctions(RE::BSScript::IVirtualMachine* vm) {
     vm->RegisterFunction("CastEnchantment", "ANDR_PapyrusFunctions", CastEnchantment);
     vm->RegisterFunction("CastPotion", "ANDR_PapyrusFunctions", CastPotion);
     vm->RegisterFunction("CastIngredient", "ANDR_PapyrusFunctions", CastIngredient);
-    vm->RegisterFunction("CastSpellFromHand", "ANDR_PapyrusFunctions", CastSpellFromHand);
+    vm->RegisterFunction("CastSpellFromRef", "ANDR_PapyrusFunctions", CastSpellFromRef);
     return true;
 }
 
