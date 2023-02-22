@@ -28,13 +28,13 @@ typedef uint32_t (*cast_CustomPos_t)(RE::Actor* caster, RE::SpellItem* spel, con
 
 RE::EffectSetting* getAVEffectSetting(RE::MagicItem* mgitem) {
     using func_t = decltype(getAVEffectSetting);
-    REL::Relocation<func_t> func {REL::ID(11194)};
+    REL::Relocation<func_t> func{REL::RelocationID(11194, 11302)};
     return func(mgitem);
 }
 
 float SkyrimSE_c51f70(RE::NiPoint3* dir) {
     using func_t = decltype(SkyrimSE_c51f70);
-    REL::Relocation<func_t> func{REL::ID(68820)};
+    REL::Relocation<func_t> func{REL::RelocationID(68820, 70172)};
     return func(dir);
 }
 
@@ -77,7 +77,32 @@ void CastIngredient(RE::StaticFunctionTag*, RE::Actor* akSource, RE::IngredientI
     akSource->GetMagicCaster(RE::MagicSystem::CastingSource::kInstant)
         ->CastSpellImmediate(akIngredient, false, akTarget, 1.0f, false, 0.0f, nullptr);
 }
-// Papyrus: Function CastSpellFromHand(Actor akSource, Spell akSpell, ObjectReference akTarget, int PositionInt) global native
+
+// Papyrus: Float Function GetEffectiveEnchantmentCost(Actor akSource, Enchantment akEnchantment)
+// Get the total effect cost of the enchantment.
+float GetEffectiveEnchantmentCost(RE::StaticFunctionTag*, RE::Actor* akSource, RE::EnchantmentItem* akEnchantment) {
+    return akEnchantment->CalculateMagickaCost(akSource);
+}
+
+// Papyrus: Float Function GetEffectivePotionCost(Actor akSource, Potion akPotion)
+// Get the total effect cost of the potion.
+float GetEffectivePotionCost(RE::StaticFunctionTag*, RE::Actor* akSource, RE::AlchemyItem* akPotion) {
+    return akPotion->CalculateMagickaCost(akSource);
+}
+
+// Papyrus: Float Function GetEffectiveIngredientCost(Actor akSource, Ingredient akIngredient)
+// Get the total effect cost of the ingredient.
+float GetEffectiveIngredientCost(RE::StaticFunctionTag*, RE::Actor* akSource, RE::IngredientItem* akIngredient) {
+    return akIngredient->CalculateMagickaCost(akSource);
+}
+
+// Papyrus: Float Function GetEffectiveScrollCost(Actor akSource, Scroll akScroll)
+// Get the total effect cost of the scroll.
+float GetEffectiveScrollCost(RE::StaticFunctionTag*, RE::Actor* akSource, RE::ScrollItem* akScroll) {
+    return akScroll->CalculateMagickaCost(akSource);
+}
+
+// Papyrus: Function CastSpellFromHand(Actor akSource, Spell akSpell, ObjectReference akTarget, ObjectReference akOriginRef) global native
 // Cast a spell from the hand defined in PositionInt at the akTarget.
 void CastSpellFromRef(RE::StaticFunctionTag*, RE::Actor* akSource, RE::SpellItem* akSpell, RE::TESObjectREFR* akTarget,
                       RE::TESObjectREFR* akOriginRef) {
@@ -89,11 +114,11 @@ void CastSpellFromRef(RE::StaticFunctionTag*, RE::Actor* akSource, RE::SpellItem
 //                            ->world.translate;
     auto NodePosition = akOriginRef->GetPosition();
 
-    logger::info("Position: X is {}, Y is {}, Z is {}.", NodePosition.x, NodePosition.y, NodePosition.z);
+//    logger::info("Position: X is {}, Y is {}, Z is {}.", NodePosition.x, NodePosition.y, NodePosition.z);
 
     auto rot = rot_at(NodePosition, akTarget->GetPosition());
 
-    logger::info("Rotation: X is {}, Z is {}.", rot.x, rot.z);
+//    logger::info("Rotation: X is {}, Z is {}.", rot.x, rot.z);
 
     auto eff = akSpell->GetCostliestEffectItem();
 
@@ -111,7 +136,6 @@ void CastSpellFromRef(RE::StaticFunctionTag*, RE::Actor* akSource, RE::SpellItem
     ldata.angleZ = rot.z; 
     ldata.angleX = rot.x; 
     ldata.unk50 = nullptr;
-//    ldata.desiredTarget = akTarget;
     ldata.desiredTarget = nullptr;
     ldata.unk60 = 0.0f;
     ldata.unk64 = 0.0f;
@@ -144,6 +168,10 @@ bool PapyrusFunctions(RE::BSScript::IVirtualMachine* vm) {
     vm->RegisterFunction("CastEnchantment", "ANDR_PapyrusFunctions", CastEnchantment);
     vm->RegisterFunction("CastPotion", "ANDR_PapyrusFunctions", CastPotion);
     vm->RegisterFunction("CastIngredient", "ANDR_PapyrusFunctions", CastIngredient);
+    vm->RegisterFunction("GetEffectiveEnchantmentCost", "ANDR_PapyrusFunctions", GetEffectiveEnchantmentCost);
+    vm->RegisterFunction("GetEffectivePotionCost", "ANDR_PapyrusFunctions", GetEffectivePotionCost);
+    vm->RegisterFunction("GetEffectiveIngredientCost", "ANDR_PapyrusFunctions", GetEffectiveIngredientCost);
+    vm->RegisterFunction("GetEffectiveScrollCost", "ANDR_PapyrusFunctions", GetEffectiveScrollCost);
     vm->RegisterFunction("CastSpellFromRef", "ANDR_PapyrusFunctions", CastSpellFromRef);
     return true;
 }
