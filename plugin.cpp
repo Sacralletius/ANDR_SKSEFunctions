@@ -1,5 +1,6 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <warning.h>
+#include "RE/N/NiPoint3.h"
 
 namespace logger = SKSE::log;
 
@@ -160,7 +161,113 @@ void CastSpellFromRef(RE::StaticFunctionTag*, RE::Actor* akSource, RE::SpellItem
     RE::Projectile::Launch(&handle, ldata);
 }
 
-// This line is needed for CastSpellFromHand() to compile, might no longer be needed in the future? ---> This is a dtor.
+// Papyrus: Function CastSpellFromHand(Actor akSource, Spell akSpell, Bool IsLeftHand, Float DistanceVar = 2000.0, Float HeightVar = 100.0, 
+// Bool UseCustomObject = False, Form akObjectBase = None,
+// Float Offset_NoSneak_Left_X = 30.0, Float Offset_NoSneak_Left_Y = 30.0, Float Offset_NoSneak_Left_Z = 110.0, 
+// Float Offset_NoSneak_Right_X = 30.0, Float Offset_NoSneak_Right_Y = -30.0, Float Offset_NoSneak_Right_Z = 110.0, 
+// Float Offset_Sneak_Left_X = 30.0, Float Offset_Sneak_Left_Y = 30.0, Float Offset_Sneak_Left_Z = 70.0, 
+// Float Offset_Sneak_Right_X = 30.0, Float Offset_Sneak_Right_Y = -30.0, Float Offset_Sneak_Right_Z = 70.0)
+void CastSpellFromHand(RE::StaticFunctionTag*, RE::Actor* akSource, RE::SpellItem* akSpell, bool IsLeftHand,
+                       float DistanceVar, float HeightVar, float Offset_NoSneak_Left_X, float Offset_NoSneak_Left_Y,
+                       float Offset_NoSneak_Left_Z, float Offset_NoSneak_Right_X, float Offset_NoSneak_Right_Y,
+                       float Offset_NoSneak_Right_Z, float Offset_Sneak_Left_X, float Offset_Sneak_Left_Y,
+                       float Offset_Sneak_Left_Z, float Offset_Sneak_Right_X, float Offset_Sneak_Right_Y,
+                       float Offset_Sneak_Right_Z) {
+
+    auto GameX = akSource->GetAngle().x;
+    auto GameZ = akSource->GetAngle().z;
+    auto AngleX = 90.0 + GameX; 
+    auto AngleZ = 0.0;
+
+    auto SourceMarkerXOffset_Standard = 0.0;
+    auto SourceMarkerYOffset_Standard = 0.0;
+    auto SourceMarkerZOffset_Standard = 0.0;
+
+    if (GameZ < 90.0) {
+        AngleZ = (90.0 - GameZ);
+    } else {
+        AngleZ = (450.0 - GameZ);
+    } 
+
+	if (akSource->IsSneaking())
+    {
+            if (IsLeftHand == true) {
+                SourceMarkerXOffset_Standard = Offset_Sneak_Left_X;
+                SourceMarkerYOffset_Standard = Offset_Sneak_Left_Y;
+                SourceMarkerZOffset_Standard = Offset_Sneak_Left_Z;
+            } else {
+                SourceMarkerXOffset_Standard = Offset_Sneak_Right_X;
+                SourceMarkerYOffset_Standard = Offset_Sneak_Right_Y;
+                SourceMarkerZOffset_Standard = Offset_Sneak_Right_Z;
+            }
+
+    } else {
+            if (IsLeftHand == true) {
+                    SourceMarkerXOffset_Standard = Offset_NoSneak_Left_X;
+                    SourceMarkerYOffset_Standard = Offset_NoSneak_Left_Y;
+                    SourceMarkerZOffset_Standard = Offset_NoSneak_Left_Z;
+            } else {
+                    SourceMarkerXOffset_Standard = Offset_NoSneak_Right_X;
+                    SourceMarkerYOffset_Standard = Offset_NoSneak_Right_Y;
+                    SourceMarkerZOffset_Standard = Offset_NoSneak_Right_Z;
+            }
+    }
+
+    auto NodePosition = {0.0f, 0.0f, 0.0f}; // needs to be a NiPoint3, ideally assigning the next three lines directly
+        
+    NodePosition.x = (cos(AngleZ) * SourceMarkerXOffset_Standard - sin(AngleZ) * SourceMarkerYOffset_Standard); 
+    NodePosition.y = (cos(AngleZ) * SourceMarkerYOffset_Standard + sin(AngleZ) * SourceMarkerXOffset_Standard);
+    NodePosition.z = SourceMarkerZOffset_Standard;
+
+    auto DestinationPosition = {0.0f, 0.0f, 0.0f};  
+
+    DestinationPosition.x = (DistanceVar * sin(AngleX) * cos(AngleZ));
+    DestinationPosition.y = (DistanceVar * sin(AngleX) * sin(AngleZ));
+    DestinationPosition.z = (DistanceVar * cos(AngleX) + HeightVar);
+
+    auto rot = rot_at(NodePosition, DestinationPosition);
+
+    auto eff = akSpell->GetCostliestEffectItem();
+
+    auto mgef = getAVEffectSetting(akSpell);
+
+    RE::Projectile::LaunchData ldata;
+
+    ldata.origin = NodePosition;
+    ldata.contactNormal = {0.0f, 0.0f, 0.0f};
+    ldata.projectileBase = mgef->data.projectileBase;
+    ldata.shooter = akSource;
+    ldata.combatController = akSource->GetActorRuntimeData().combatController;
+    ldata.weaponSource = nullptr;
+    ldata.ammoSource = nullptr;
+    ldata.angleZ = rot.z;
+    ldata.angleX = rot.x;
+    ldata.unk50 = nullptr;
+    ldata.desiredTarget = nullptr;
+    ldata.unk60 = 0.0f;
+    ldata.unk64 = 0.0f;
+    ldata.parentCell = akSource->GetParentCell();
+    ldata.spell = akSpell;
+    ldata.castingSource = RE::MagicSystem::CastingSource::kOther;
+    ldata.unk7C = 0;
+    ldata.enchantItem = nullptr;
+    ldata.poison = nullptr;
+    ldata.area = eff->GetArea();
+    ldata.power = 1.0f;
+    ldata.scale = 1.0f;
+    ldata.alwaysHit = false;
+    ldata.noDamageOutsideCombat = false;
+    ldata.autoAim = false;
+    ldata.unk9F = false;
+    ldata.useOrigin = true;
+    ldata.deferInitialization = false;
+    ldata.forceConeOfFire = false;
+
+    RE::BSPointerHandle<RE::Projectile> handle;
+    RE::Projectile::Launch(&handle, ldata);
+}
+
+// This line is needed for CastSpellFromRef() and CastSpellFromHand() to compile, might no longer be needed in the future? ---> This is a dtor.
 
 RE::Projectile::LaunchData::~LaunchData() {}
 
@@ -173,6 +280,7 @@ bool PapyrusFunctions(RE::BSScript::IVirtualMachine* vm) {
     vm->RegisterFunction("GetEffectiveIngredientCost", "ANDR_PapyrusFunctions", GetEffectiveIngredientCost);
     vm->RegisterFunction("GetEffectiveScrollCost", "ANDR_PapyrusFunctions", GetEffectiveScrollCost);
     vm->RegisterFunction("CastSpellFromRef", "ANDR_PapyrusFunctions", CastSpellFromRef);
+    vm->RegisterFunction("CastSpellFromHand", "ANDR_PapyrusFunctions", CastSpellFromHand);
     return true;
 }
 
