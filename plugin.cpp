@@ -174,14 +174,14 @@ void CastSpellFromHand(RE::StaticFunctionTag*, RE::Actor* akSource, RE::SpellIte
                        float Offset_Sneak_Left_Z, float Offset_Sneak_Right_X, float Offset_Sneak_Right_Y,
                        float Offset_Sneak_Right_Z) {
 
-    auto GameX = akSource->GetAngle().x;
-    auto GameZ = akSource->GetAngle().z;
-    auto AngleX = 90.0 + GameX; 
-    auto AngleZ = 0.0;
+    float GameX = akSource->GetAngle().x;
+    float GameZ = akSource->GetAngle().z;
+    float AngleX = 90.0 + GameX; 
+    float AngleZ;
 
-    auto SourceMarkerXOffset_Standard = 0.0;
-    auto SourceMarkerYOffset_Standard = 0.0;
-    auto SourceMarkerZOffset_Standard = 0.0;
+    float SourceMarkerXOffset_Standard;
+    float SourceMarkerYOffset_Standard;
+    float SourceMarkerZOffset_Standard;
 
     if (GameZ < 90.0) {
         AngleZ = (90.0 - GameZ);
@@ -213,13 +213,13 @@ void CastSpellFromHand(RE::StaticFunctionTag*, RE::Actor* akSource, RE::SpellIte
             }
     }
 
-    auto NodePosition = {0.0f, 0.0f, 0.0f}; // needs to be a NiPoint3, ideally assigning the next three lines directly
+    RE::NiPoint3 NodePosition;  
         
     NodePosition.x = (cos(AngleZ) * SourceMarkerXOffset_Standard - sin(AngleZ) * SourceMarkerYOffset_Standard); 
     NodePosition.y = (cos(AngleZ) * SourceMarkerYOffset_Standard + sin(AngleZ) * SourceMarkerXOffset_Standard);
     NodePosition.z = SourceMarkerZOffset_Standard;
 
-    auto DestinationPosition = {0.0f, 0.0f, 0.0f};  
+    RE::NiPoint3 DestinationPosition;  
 
     DestinationPosition.x = (DistanceVar * sin(AngleX) * cos(AngleZ));
     DestinationPosition.y = (DistanceVar * sin(AngleX) * sin(AngleZ));
