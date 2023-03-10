@@ -2,6 +2,7 @@
 #include <warning.h>
 #include "RE/N/NiPoint3.h"
 
+
 namespace logger = SKSE::log;
 
 void SetupLog() {
@@ -103,6 +104,40 @@ float GetEffectiveScrollCost(RE::StaticFunctionTag*, RE::Actor* akSource, RE::Sc
     return akScroll->CalculateMagickaCost(akSource);
 }
 
+// ActiveMagicEffect Function GetActiveMagicEffectFromActor(Actor akActor, MagicEffect akMagicEffect) native global
+// Get the instance of akMagicEffect on akActor
+RE::ActiveEffect* GetActiveMagicEffectFromActor(RE::StaticFunctionTag*, RE::Actor* akActor,
+                                                RE::EffectSetting* akMagicEffect) {
+    
+    if (akMagicEffect == nullptr) {
+        logger::info("akMagicEffect is none.");
+        return nullptr;
+    }
+
+    auto EffectsList = akActor->AsMagicTarget()->GetActiveEffectList();
+
+    if (!EffectsList) {
+        logger::info("Effects List is none.");
+        return nullptr;
+    }
+
+    for (const auto& effect : *EffectsList) {
+        const auto& setting = effect ? effect->GetBaseObject() : nullptr;
+
+        if (setting) {
+//            logger::info("The effect we're checking is {}. The effect we're looking for is {}.", setting->formID,
+//                         akMagicEffect->formID);
+            if (setting == akMagicEffect) {
+                return effect;
+            }
+        } else {
+            logger::info("The setting is nullptr");
+        }
+    }
+    logger::info("Effect is none.");
+    return nullptr;
+}
+
 // Papyrus: Function CastSpellFromHand(Actor akSource, Spell akSpell, ObjectReference akTarget, ObjectReference akOriginRef) global native
 // Cast a spell from the hand defined in PositionInt at the akTarget.
 void CastSpellFromRef(RE::StaticFunctionTag*, RE::Actor* akSource, RE::SpellItem* akSpell, RE::TESObjectREFR* akTarget,
@@ -161,113 +196,189 @@ void CastSpellFromRef(RE::StaticFunctionTag*, RE::Actor* akSource, RE::SpellItem
     RE::Projectile::Launch(&handle, ldata);
 }
 
+// Function CastSpellFromPointToPoint(Actor akSource, Spell akSpell, Float StartPoint_X, Float StartPoint_Y,
+//                                   Float StartPoint_Z, Float EndPoint_X, Float EndPoint_Y,
+//                                   Float EndPoint_Z) native global {
+
+void CastSpellFromPointToPoint(RE::StaticFunctionTag*, RE::Actor* akSource, RE::SpellItem* akSpell, float StartPoint_X,
+                               float StartPoint_Y, float StartPoint_Z, float EndPoint_X, float EndPoint_Y,
+                               float EndPoint_Z) {
+
+     RE::NiPoint3 NodePosition;
+
+     NodePosition.x = StartPoint_X;
+     NodePosition.y = StartPoint_Y;
+     NodePosition.z = StartPoint_Z;
+
+     logger::info("NodePosition: X = {}, Y = {}, Z = {}.", NodePosition.x, NodePosition.y, NodePosition.z);
+
+     RE::NiPoint3 DestinationPosition;
+
+     DestinationPosition.x = EndPoint_X;
+     DestinationPosition.y = EndPoint_Y;
+     DestinationPosition.z = EndPoint_Z;
+
+     logger::info("DestinationPosition: X = {}, Y = {}, Z = {}.", DestinationPosition.x, DestinationPosition.y,
+                  DestinationPosition.z);
+
+     auto rot = rot_at(NodePosition, DestinationPosition);
+
+     auto eff = akSpell->GetCostliestEffectItem();
+
+     auto mgef = getAVEffectSetting(akSpell);
+
+     RE::Projectile::LaunchData ldata;
+
+     ldata.origin = NodePosition;
+     ldata.contactNormal = {0.0f, 0.0f, 0.0f};
+     ldata.projectileBase = mgef->data.projectileBase;
+     ldata.shooter = akSource;
+     ldata.combatController = akSource->GetActorRuntimeData().combatController;
+     ldata.weaponSource = nullptr;
+     ldata.ammoSource = nullptr;
+     ldata.angleZ = rot.z;
+     ldata.angleX = rot.x;
+     ldata.unk50 = nullptr;
+     ldata.desiredTarget = nullptr;
+     ldata.unk60 = 0.0f;
+     ldata.unk64 = 0.0f;
+     ldata.parentCell = akSource->GetParentCell();
+     ldata.spell = akSpell;
+     ldata.castingSource = RE::MagicSystem::CastingSource::kOther;
+     ldata.unk7C = 0;
+     ldata.enchantItem = nullptr;
+     ldata.poison = nullptr;
+     ldata.area = eff->GetArea();
+     ldata.power = 1.0f;
+     ldata.scale = 1.0f;
+     ldata.alwaysHit = false;
+     ldata.noDamageOutsideCombat = false;
+     ldata.autoAim = false;
+     ldata.unk9F = false;
+     ldata.useOrigin = true;
+     ldata.deferInitialization = false;
+     ldata.forceConeOfFire = false;
+
+     RE::BSPointerHandle<RE::Projectile> handle;
+     RE::Projectile::Launch(&handle, ldata);
+
+}
+
+// Math for this function seems to be different than through papyrus, as such it's done as a non-native function, that calls CastSpellFromPointToPoint() for now.
 // Papyrus: Function CastSpellFromHand(Actor akSource, Spell akSpell, Bool IsLeftHand, Float DistanceVar = 2000.0, Float HeightVar = 100.0, 
 // Bool UseCustomObject = False, Form akObjectBase = None,
 // Float Offset_NoSneak_Left_X = 30.0, Float Offset_NoSneak_Left_Y = 30.0, Float Offset_NoSneak_Left_Z = 110.0, 
 // Float Offset_NoSneak_Right_X = 30.0, Float Offset_NoSneak_Right_Y = -30.0, Float Offset_NoSneak_Right_Z = 110.0, 
 // Float Offset_Sneak_Left_X = 30.0, Float Offset_Sneak_Left_Y = 30.0, Float Offset_Sneak_Left_Z = 70.0, 
 // Float Offset_Sneak_Right_X = 30.0, Float Offset_Sneak_Right_Y = -30.0, Float Offset_Sneak_Right_Z = 70.0)
-void CastSpellFromHand(RE::StaticFunctionTag*, RE::Actor* akSource, RE::SpellItem* akSpell, bool IsLeftHand,
-                       float DistanceVar, float HeightVar, float Offset_NoSneak_Left_X, float Offset_NoSneak_Left_Y,
-                       float Offset_NoSneak_Left_Z, float Offset_NoSneak_Right_X, float Offset_NoSneak_Right_Y,
-                       float Offset_NoSneak_Right_Z, float Offset_Sneak_Left_X, float Offset_Sneak_Left_Y,
-                       float Offset_Sneak_Left_Z, float Offset_Sneak_Right_X, float Offset_Sneak_Right_Y,
-                       float Offset_Sneak_Right_Z) {
+// void CastSpellFromHand(RE::StaticFunctionTag*, RE::Actor* akSource, RE::SpellItem* akSpell, bool IsLeftHand,
+//                         float DistanceVar, float HeightVar, float Offset_NoSneak_Left_X, float Offset_NoSneak_Left_Y,
+//                         float Offset_NoSneak_Left_Z, float Offset_NoSneak_Right_X, float Offset_NoSneak_Right_Y,
+//                         float Offset_NoSneak_Right_Z, float Offset_Sneak_Left_X, float Offset_Sneak_Left_Y,
+//                         float Offset_Sneak_Left_Z, float Offset_Sneak_Right_X, float Offset_Sneak_Right_Y,
+//                         float Offset_Sneak_Right_Z) {
+// 
+//      float GameX = akSource->GetAngle().x;
+//      float GameZ = akSource->GetAngle().z;
+//      float AngleX = 90.0 + GameX; 
+//      float AngleZ;
+// 
+//      float SourceMarkerXOffset_Standard;
+//      float SourceMarkerYOffset_Standard;
+//      float SourceMarkerZOffset_Standard;
+// 
+//      if (GameZ < 90.0) {
+//          AngleZ = (90.0 - GameZ);
+//      } else {
+//          AngleZ = (450.0 - GameZ);
+//      } 
+// 
+// 	if (akSource->IsSneaking())
+//      {
+//              if (IsLeftHand == true) {
+//                  SourceMarkerXOffset_Standard = Offset_Sneak_Left_X;
+//                  SourceMarkerYOffset_Standard = Offset_Sneak_Left_Y;
+//                  SourceMarkerZOffset_Standard = Offset_Sneak_Left_Z;
+//              } else {
+//                  SourceMarkerXOffset_Standard = Offset_Sneak_Right_X;
+//                  SourceMarkerYOffset_Standard = Offset_Sneak_Right_Y;
+//                  SourceMarkerZOffset_Standard = Offset_Sneak_Right_Z;
+//              }
+// 
+//      } else {
+//              if (IsLeftHand == true) {
+//                      SourceMarkerXOffset_Standard = Offset_NoSneak_Left_X;
+//                      SourceMarkerYOffset_Standard = Offset_NoSneak_Left_Y;
+//                      SourceMarkerZOffset_Standard = Offset_NoSneak_Left_Z;
+//              } else {
+//                      SourceMarkerXOffset_Standard = Offset_NoSneak_Right_X;
+//                      SourceMarkerYOffset_Standard = Offset_NoSneak_Right_Y;
+//                      SourceMarkerZOffset_Standard = Offset_NoSneak_Right_Z;
+//              }
+//      }
+// 
+//      RE::NiPoint3 NodePosition;  
+//     
+//      NodePosition.x = (akSource->GetPositionX() + (cos(AngleZ) * SourceMarkerXOffset_Standard - sin(AngleZ) *
+//      SourceMarkerYOffset_Standard)); 
+//      NodePosition.y = (akSource->GetPositionY() + (cos(AngleZ) * SourceMarkerYOffset_Standard + sin(AngleZ) *
+//      SourceMarkerXOffset_Standard));
+//      NodePosition.z = (akSource->GetPositionZ() + SourceMarkerZOffset_Standard);
+// 
+//      logger::info("NodePosition: X = {}, Y = {}, Z = {}.", NodePosition.x, NodePosition.y, NodePosition.z);
+// 
+//      RE::NiPoint3 DestinationPosition;  
+// 
+//      DestinationPosition.x = (akSource->GetPositionX() + (DistanceVar * sin(AngleX) * cos(AngleZ)));
+//      DestinationPosition.y = (akSource->GetPositionY() + (DistanceVar * sin(AngleX) * sin(AngleZ)));
+//      DestinationPosition.z = (akSource->GetPositionZ() + (DistanceVar * cos(AngleX) + HeightVar));
+// 
+//      logger::info("DestinationPosition: X = {}, Y = {}, Z = {}.", DestinationPosition.x, DestinationPosition.y,
+//                   DestinationPosition.z);
+// 
+//      auto rot = rot_at(NodePosition, DestinationPosition);
+// 
+//      auto eff = akSpell->GetCostliestEffectItem();
+// 
+//      auto mgef = getAVEffectSetting(akSpell);
+// 
+//      RE::Projectile::LaunchData ldata;
+// 
+//      ldata.origin = NodePosition;
+//      ldata.contactNormal = {0.0f, 0.0f, 0.0f};
+//      ldata.projectileBase = mgef->data.projectileBase;
+//      ldata.shooter = akSource;
+//      ldata.combatController = akSource->GetActorRuntimeData().combatController;
+//      ldata.weaponSource = nullptr;
+//      ldata.ammoSource = nullptr;
+//      ldata.angleZ = rot.z;
+//      ldata.angleX = rot.x;
+//      ldata.unk50 = nullptr;
+//      ldata.desiredTarget = nullptr;
+//      ldata.unk60 = 0.0f;
+//      ldata.unk64 = 0.0f;
+//      ldata.parentCell = akSource->GetParentCell();
+//      ldata.spell = akSpell;
+//      ldata.castingSource = RE::MagicSystem::CastingSource::kOther;
+//      ldata.unk7C = 0;
+//      ldata.enchantItem = nullptr;
+//      ldata.poison = nullptr;
+//      ldata.area = eff->GetArea();
+//      ldata.power = 1.0f;
+//      ldata.scale = 1.0f;
+//      ldata.alwaysHit = false;
+//      ldata.noDamageOutsideCombat = false;
+//      ldata.autoAim = false;
+//      ldata.unk9F = false;
+//      ldata.useOrigin = true;
+//      ldata.deferInitialization = false;
+//      ldata.forceConeOfFire = false;
+// 
+//      RE::BSPointerHandle<RE::Projectile> handle;
+//      RE::Projectile::Launch(&handle, ldata);
+//  }
 
-    float GameX = akSource->GetAngle().x;
-    float GameZ = akSource->GetAngle().z;
-    float AngleX = 90.0 + GameX; 
-    float AngleZ;
-
-    float SourceMarkerXOffset_Standard;
-    float SourceMarkerYOffset_Standard;
-    float SourceMarkerZOffset_Standard;
-
-    if (GameZ < 90.0) {
-        AngleZ = (90.0 - GameZ);
-    } else {
-        AngleZ = (450.0 - GameZ);
-    } 
-
-	if (akSource->IsSneaking())
-    {
-            if (IsLeftHand == true) {
-                SourceMarkerXOffset_Standard = Offset_Sneak_Left_X;
-                SourceMarkerYOffset_Standard = Offset_Sneak_Left_Y;
-                SourceMarkerZOffset_Standard = Offset_Sneak_Left_Z;
-            } else {
-                SourceMarkerXOffset_Standard = Offset_Sneak_Right_X;
-                SourceMarkerYOffset_Standard = Offset_Sneak_Right_Y;
-                SourceMarkerZOffset_Standard = Offset_Sneak_Right_Z;
-            }
-
-    } else {
-            if (IsLeftHand == true) {
-                    SourceMarkerXOffset_Standard = Offset_NoSneak_Left_X;
-                    SourceMarkerYOffset_Standard = Offset_NoSneak_Left_Y;
-                    SourceMarkerZOffset_Standard = Offset_NoSneak_Left_Z;
-            } else {
-                    SourceMarkerXOffset_Standard = Offset_NoSneak_Right_X;
-                    SourceMarkerYOffset_Standard = Offset_NoSneak_Right_Y;
-                    SourceMarkerZOffset_Standard = Offset_NoSneak_Right_Z;
-            }
-    }
-
-    RE::NiPoint3 NodePosition;  
-        
-    NodePosition.x = (cos(AngleZ) * SourceMarkerXOffset_Standard - sin(AngleZ) * SourceMarkerYOffset_Standard); 
-    NodePosition.y = (cos(AngleZ) * SourceMarkerYOffset_Standard + sin(AngleZ) * SourceMarkerXOffset_Standard);
-    NodePosition.z = SourceMarkerZOffset_Standard;
-
-    RE::NiPoint3 DestinationPosition;  
-
-    DestinationPosition.x = (DistanceVar * sin(AngleX) * cos(AngleZ));
-    DestinationPosition.y = (DistanceVar * sin(AngleX) * sin(AngleZ));
-    DestinationPosition.z = (DistanceVar * cos(AngleX) + HeightVar);
-
-    auto rot = rot_at(NodePosition, DestinationPosition);
-
-    auto eff = akSpell->GetCostliestEffectItem();
-
-    auto mgef = getAVEffectSetting(akSpell);
-
-    RE::Projectile::LaunchData ldata;
-
-    ldata.origin = NodePosition;
-    ldata.contactNormal = {0.0f, 0.0f, 0.0f};
-    ldata.projectileBase = mgef->data.projectileBase;
-    ldata.shooter = akSource;
-    ldata.combatController = akSource->GetActorRuntimeData().combatController;
-    ldata.weaponSource = nullptr;
-    ldata.ammoSource = nullptr;
-    ldata.angleZ = rot.z;
-    ldata.angleX = rot.x;
-    ldata.unk50 = nullptr;
-    ldata.desiredTarget = nullptr;
-    ldata.unk60 = 0.0f;
-    ldata.unk64 = 0.0f;
-    ldata.parentCell = akSource->GetParentCell();
-    ldata.spell = akSpell;
-    ldata.castingSource = RE::MagicSystem::CastingSource::kOther;
-    ldata.unk7C = 0;
-    ldata.enchantItem = nullptr;
-    ldata.poison = nullptr;
-    ldata.area = eff->GetArea();
-    ldata.power = 1.0f;
-    ldata.scale = 1.0f;
-    ldata.alwaysHit = false;
-    ldata.noDamageOutsideCombat = false;
-    ldata.autoAim = false;
-    ldata.unk9F = false;
-    ldata.useOrigin = true;
-    ldata.deferInitialization = false;
-    ldata.forceConeOfFire = false;
-
-    RE::BSPointerHandle<RE::Projectile> handle;
-    RE::Projectile::Launch(&handle, ldata);
-}
-
-// This line is needed for CastSpellFromRef() and CastSpellFromHand() to compile, might no longer be needed in the future? ---> This is a dtor.
+// This line is needed for CastSpellFromRef(), CastSpellFromHand() and CastSpellFromPointToPoint() to compile, might no longer be needed in the future? ---> This is a dtor.
 
 RE::Projectile::LaunchData::~LaunchData() {}
 
@@ -279,8 +390,10 @@ bool PapyrusFunctions(RE::BSScript::IVirtualMachine* vm) {
     vm->RegisterFunction("GetEffectivePotionCost", "ANDR_PapyrusFunctions", GetEffectivePotionCost);
     vm->RegisterFunction("GetEffectiveIngredientCost", "ANDR_PapyrusFunctions", GetEffectiveIngredientCost);
     vm->RegisterFunction("GetEffectiveScrollCost", "ANDR_PapyrusFunctions", GetEffectiveScrollCost);
+    vm->RegisterFunction("GetActiveMagicEffectFromActor", "ANDR_PapyrusFunctions", GetActiveMagicEffectFromActor);
     vm->RegisterFunction("CastSpellFromRef", "ANDR_PapyrusFunctions", CastSpellFromRef);
-    vm->RegisterFunction("CastSpellFromHand", "ANDR_PapyrusFunctions", CastSpellFromHand);
+    vm->RegisterFunction("CastSpellFromPointToPoint", "ANDR_PapyrusFunctions", CastSpellFromPointToPoint);
+//    vm->RegisterFunction("CastSpellFromHand", "ANDR_PapyrusFunctions", CastSpellFromHand);
     return true;
 }
 

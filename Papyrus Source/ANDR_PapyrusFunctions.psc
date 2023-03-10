@@ -2,6 +2,8 @@ scriptName ANDR_PapyrusFunctions hidden
 
 Import Math
 
+; ============================= NATIVE FUNCTIONS =============================
+
 Function CastEnchantment(Actor akSource, Enchantment akEnchantment, Actor akTarget) global native
 { 
 - akSource: The Actor from which to cast the Enchantment.
@@ -51,6 +53,13 @@ Float Function GetEffectiveScrollCost(Actor akSource, Scroll akScroll) global na
 - akScroll: the scroll.
 }
 
+ActiveMagicEffect Function GetActiveMagicEffectFromActor(Actor akActor, MagicEffect akMagicEffect) global native
+{
+- akActor: the actor to check.
+- akMagicEffect: the base magic to look for.
+- Returns: the instance (ActiveMagicEffect) of akMagicEffect on the akActor.
+}
+
 Function CastSpellFromRef(Actor akSource, Spell akSpell, ObjectReference akTarget, ObjectReference akOriginRef) global native
 { 
 - akSource: The caster of the spell.
@@ -59,115 +68,112 @@ Function CastSpellFromRef(Actor akSource, Spell akSpell, ObjectReference akTarge
 - akOriginRef: The ObjectReference where to cast the spell from.
 }
 
-Function CastSpellFromHand(Actor akSource, Spell akSpell, Bool IsLeftHand, Float DistanceVar = 2000.0, Float HeightVar = 100.0, Float Offset_NoSneak_Left_X = 30.0, Float Offset_NoSneak_Left_Y = 30.0, Float Offset_NoSneak_Left_Z = 110.0, Float Offset_NoSneak_Right_X = 30.0, Float Offset_NoSneak_Right_Y = -30.0, Float Offset_NoSneak_Right_Z = 110.0, Float Offset_Sneak_Left_X = 30.0, Float Offset_Sneak_Left_Y = 30.0, Float Offset_Sneak_Left_Z = 70.0, Float Offset_Sneak_Right_X = 30.0, Float Offset_Sneak_Right_Y = -30.0, Float Offset_Sneak_Right_Z = 70.0) native global
+Function CastSpellFromPointToPoint(Actor akSource, Spell akSpell, Float StartPoint_X, Float StartPoint_Y, Float StartPoint_Z, Float EndPoint_X, Float EndPoint_Y, Float EndPoint_Z) native global
 {
 - akSource: The caster.
 - akSpell: The spell to cast.
-- IsLeftHand: True if cast from the left hand, false if cast from the right hand.
-- DistanceVar: Optional, the distance from the caster, where the destination marker is spawned. Default is 2000 units.
-- HeightVar: Optional, the height difference at which destination marker is spawned. Default is 100 units.
-- Offset_NoSneak_Left_X: Optional, X Offset for left hand when the actor is not sneaking. Default value is 30.0.
-- Offset_NoSneak_Left_Y: Optional, Y Offset for left hand when the actor is not sneaking. Default value is 30.0.
-- Offset_NoSneak_Left_Z: Optional, Z Offset for left hand when the actor is not sneaking. Default value is 110.0.
-- Offset_NoSneak_Right_X: Optional, X Offset for right hand when the actor is not sneaking. Default value is 30.0.
-- Offset_NoSneak_Right_Y: Optional, Y Offset for right hand when the actor is not sneaking. Default value is -30.0.
-- Offset_NoSneak_Right_Z: Optional, Z Offset for right hand when the actor is not sneaking. Default value is 110.0.
-- Offset_Sneak_Left_X: Optional, X Offset for left hand when the actor is sneaking. Default value is 30.0.
-- Offset_Sneak_Left_Y: Optional, Y Offset for left hand when the actor is sneaking. Default value is 30.0.
-- Offset_Sneak_Left_Z: Optional, Z Offset for left hand when the actor is sneaking. Default value is 70.0.
-- Offset_Sneak_Right_X: Optional, X Offset for right hand when the actor is sneaking. Default value is 30.0.
-- Offset_Sneak_Right_Y: Optional, Y Offset for right hand when the actor is sneaking. Default value is -30.0.
-- Offset_Sneak_Right_Z: Optional, Z Offset for right hand when the actor is sneaking. Default value is 70.0.
+- StartPoint_X: The X position of the starting point.
+- StartPoint_Y: The Y position of the starting point.
+- StartPoint_Z: The Z position of the starting point.
+- EndPoint_X: The X position of the ending point.
+- EndPoint_Y: The Y position of the ending point.
+- EndPoint_Z: The Z position of the ending point.
 }
-	; ======= Example of use =======
-	; CastSpellFromHand(YsoldaRef, IceSpike, true)
-	; 
-	; Have Ysolda cast an Ice Spike spell from her left hand.
-	; ==============================
-	
 
-;Function CastSpellFromHand(Actor akSource, Spell akSpell, Bool IsLeftHand, Float DistanceVar = 2000.0, Float HeightVar = 100.0, Bool UseCustomObject = False, Form akObjectBase = None, Float Offset_NoSneak_Left_X = 30.0, Float Offset_NoSneak_Left_Y = 30.0, Float Offset_NoSneak_Left_Z = 110.0, Float Offset_NoSneak_Right_X = 30.0, Float Offset_NoSneak_Right_Y = -30.0, Float Offset_NoSneak_Right_Z = 110.0, Float Offset_Sneak_Left_X = 30.0, Float Offset_Sneak_Left_Y = 30.0, Float Offset_Sneak_Left_Z = 70.0, Float Offset_Sneak_Right_X = 30.0, Float Offset_Sneak_Right_Y = -30.0, Float Offset_Sneak_Right_Z = 70.0)	global
-;{
-;- akSource: The caster.
-;- akSpell: The spell to cast.
-;- IsLeftHand: True if cast from the left hand, false if cast from the right hand.
-;- DistanceVar: Optional, the distance from the caster, where the destination marker is spawned. Default is 2000 units.
-;- HeightVar: Optional, the height difference at which destination marker is spawned. Default is 100 units.
-;- UseCustomObject: Optional, set to true if you want to assign akObjectBase to a custom object. Default is false.
-;- akObjectBase: Optional, base object of the markers to spawn. Default is set to an xmarker.
-;- Offset_NoSneak_Left_X: Optional, X Offset for left hand when the actor is not sneaking. Default value is 30.0.
-;- Offset_NoSneak_Left_Y: Optional, Y Offset for left hand when the actor is not sneaking. Default value is 30.0.
-;- Offset_NoSneak_Left_Z: Optional, Z Offset for left hand when the actor is not sneaking. Default value is 110.0.
-;- Offset_NoSneak_Right_X: Optional, X Offset for right hand when the actor is not sneaking. Default value is 30.0.
-;- Offset_NoSneak_Right_Y: Optional, Y Offset for right hand when the actor is not sneaking. Default value is -30.0.
-;- Offset_NoSneak_Right_Z: Optional, Z Offset for right hand when the actor is not sneaking. Default value is 110.0.
-;- Offset_Sneak_Left_X: Optional, X Offset for left hand when the actor is sneaking. Default value is 30.0.
-;- Offset_Sneak_Left_Y: Optional, Y Offset for left hand when the actor is sneaking. Default value is 30.0.
-;- Offset_Sneak_Left_Z: Optional, Z Offset for left hand when the actor is sneaking. Default value is 70.0.
-;- Offset_Sneak_Right_X: Optional, X Offset for right hand when the actor is sneaking. Default value is 30.0.
-;- Offset_Sneak_Right_Y: Optional, Y Offset for right hand when the actor is sneaking. Default value is -30.0.
-;- Offset_Sneak_Right_Z: Optional, Z Offset for right hand when the actor is sneaking. Default value is 70.0.
-;}
-;	; ======= Example of use =======
-;	; CastSpellFromHand(YsoldaRef, IceSpike, true)
-;	; 
-;	; Have Ysolda cast an Ice Spike spell from her left hand.
-;	; ==============================
-;
-;	If UseCustomObject == False
-;		akObjectBase = (Game.GetFormFromFile(0x3B, "Skyrim.esm"))
-;	EndIf
-;
-;    Float GameX = akSource.GetAngleX()
-;    Float GameZ = akSource.GetAngleZ()
-;    Float AngleX = 90 + GameX  
-;    Float AngleZ
-;
-;	Float SourceMarkerXOffset_Standard
-;	Float SourceMarkerYOffset_Standard
-;	Float SourceMarkerZOffset_Standard
-;
-;    If GameZ < 90 
-;        AngleZ = 90 - GameZ
-;    Else
-;        AngleZ = 450 - GameZ
-;    EndIf
-;	
-;	ObjectReference SourceMarkerRef = akSource.PlaceAtMe(akObjectBase)
-;    ObjectReference DestinationMarkerRef = akSource.PlaceAtMe(akObjectBase)
-;	
-;	If !akSource.IsSneaking()
-;		If 	IsLeftHand
-;			SourceMarkerXOffset_Standard = Offset_NoSneak_Left_X
-;			SourceMarkerYOffset_Standard = Offset_NoSneak_Left_Y
-;			SourceMarkerZOffset_Standard = Offset_NoSneak_Left_Z
-;		Else
-;			SourceMarkerXOffset_Standard = Offset_NoSneak_Right_X
-;			SourceMarkerYOffset_Standard = Offset_NoSneak_Right_Y
-;			SourceMarkerZOffset_Standard = Offset_NoSneak_Right_Z
-;		EndIf
-;	Else
-;		If 	IsLeftHand
-;			SourceMarkerXOffset_Standard = Offset_Sneak_Left_X
-;			SourceMarkerYOffset_Standard = Offset_Sneak_Left_Y
-;			SourceMarkerZOffset_Standard = Offset_Sneak_Left_Z
-;		Else
-;			SourceMarkerXOffset_Standard = Offset_Sneak_Right_X
-;			SourceMarkerYOffset_Standard = Offset_Sneak_Right_Y
-;			SourceMarkerZOffset_Standard = Offset_Sneak_Right_Z
-;		EndIf
-;	EndIf
-;	SourceMarkerRef.MoveTo(akSource, (cos(AngleZ)*SourceMarkerXOffset_Standard - sin(AngleZ)*SourceMarkerYOffset_Standard), (cos(AngleZ)*SourceMarkerYOffset_Standard + sin(AngleZ)*SourceMarkerXOffset_Standard), SourceMarkerZOffset_Standard) 
-;	
-;    DestinationMarkerRef.MoveTo(akSource, DistanceVar * Math.Sin(AngleX) * Math.Cos(AngleZ), DistanceVar * Math.Sin(AngleX) * Math.Sin(AngleZ), DistanceVar * Math.Cos(AngleX) + HeightVar)
-;    CastSpellFromRef(akSource, akSpell, DestinationMarkerRef, SourceMarkerRef)
-;
-;    DestinationMarkerRef.Disable()
-;	SourceMarkerRef.Disable()
-;    Utility.Wait(0.5)
-;    DestinationMarkerRef.Delete()    
-;	SourceMarkerRef.Delete()	
-;EndFunction
+; ============================= NON-NATIVE FUNCTIONS =============================
+
+Function CastSpellFromHand(Actor akSource, Spell akSpell, Bool IsLeftHand, Float DistanceVar = 2000.0, Float HeightVar = 100.0, Bool UseCustomObject = False, Form akObjectBase = None, Float Offset_NoSneak_Left_X = 30.0, Float Offset_NoSneak_Left_Y = 30.0, Float Offset_NoSneak_Left_Z = 110.0, Float Offset_NoSneak_Right_X = 30.0, Float Offset_NoSneak_Right_Y = -30.0, Float Offset_NoSneak_Right_Z = 110.0, Float Offset_Sneak_Left_X = 30.0, Float Offset_Sneak_Left_Y = 30.0, Float Offset_Sneak_Left_Z = 70.0, Float Offset_Sneak_Right_X = 30.0, Float Offset_Sneak_Right_Y = -30.0, Float Offset_Sneak_Right_Z = 70.0)	global
+	{
+	- akSource: The caster.
+	- akSpell: The spell to cast.
+	- IsLeftHand: True if cast from the left hand, false if cast from the right hand.
+	- DistanceVar: Optional, the distance from the caster, where the destination marker is spawned. Default is 2000 units.
+	- HeightVar: Optional, the height difference at which destination marker is spawned. Default is 100 units.
+	- UseCustomObject: Optional, set to true if you want to assign akObjectBase to a custom object. Default is false.
+	- akObjectBase: Optional, base object of the markers to spawn. Default is set to an xmarker.
+	- Offset_NoSneak_Left_X: Optional, X Offset for left hand when the actor is not sneaking. Default value is 30.0.
+	- Offset_NoSneak_Left_Y: Optional, Y Offset for left hand when the actor is not sneaking. Default value is 30.0.
+	- Offset_NoSneak_Left_Z: Optional, Z Offset for left hand when the actor is not sneaking. Default value is 110.0.
+	- Offset_NoSneak_Right_X: Optional, X Offset for right hand when the actor is not sneaking. Default value is 30.0.
+	- Offset_NoSneak_Right_Y: Optional, Y Offset for right hand when the actor is not sneaking. Default value is -30.0.
+	- Offset_NoSneak_Right_Z: Optional, Z Offset for right hand when the actor is not sneaking. Default value is 110.0.
+	- Offset_Sneak_Left_X: Optional, X Offset for left hand when the actor is sneaking. Default value is 30.0.
+	- Offset_Sneak_Left_Y: Optional, Y Offset for left hand when the actor is sneaking. Default value is 30.0.
+	- Offset_Sneak_Left_Z: Optional, Z Offset for left hand when the actor is sneaking. Default value is 70.0.
+	- Offset_Sneak_Right_X: Optional, X Offset for right hand when the actor is sneaking. Default value is 30.0.
+	- Offset_Sneak_Right_Y: Optional, Y Offset for right hand when the actor is sneaking. Default value is -30.0.
+	- Offset_Sneak_Right_Z: Optional, Z Offset for right hand when the actor is sneaking. Default value is 70.0.
+	}
+		; ======= Example of use =======
+		; CastSpellFromHand(YsoldaRef, IceSpike, true)
+		; 
+		; Have Ysolda cast an Ice Spike spell from her left hand.
+		; ==============================
+	
+	;	If UseCustomObject == False
+	;		akObjectBase = (Game.GetFormFromFile(0x3B, "Skyrim.esm"))
+	;	EndIf
+
+		Float GameX = akSource.GetAngleX()
+		Float GameZ = akSource.GetAngleZ()
+		Float AngleX = 90 + GameX  
+		Float AngleZ
+	
+		Float SourceMarkerXOffset_Standard
+		Float SourceMarkerYOffset_Standard
+		Float SourceMarkerZOffset_Standard
+	
+		If GameZ < 90 
+			AngleZ = 90 - GameZ
+		Else
+			AngleZ = 450 - GameZ
+		EndIf
+		
+		ObjectReference SourceMarkerRef = akSource.PlaceAtMe(akObjectBase)
+		ObjectReference DestinationMarkerRef = akSource.PlaceAtMe(akObjectBase)
+		
+		If !akSource.IsSneaking()
+			If 	IsLeftHand
+				SourceMarkerXOffset_Standard = Offset_NoSneak_Left_X
+				SourceMarkerYOffset_Standard = Offset_NoSneak_Left_Y
+				SourceMarkerZOffset_Standard = Offset_NoSneak_Left_Z
+			Else
+				SourceMarkerXOffset_Standard = Offset_NoSneak_Right_X
+				SourceMarkerYOffset_Standard = Offset_NoSneak_Right_Y
+				SourceMarkerZOffset_Standard = Offset_NoSneak_Right_Z
+			EndIf
+		Else
+			If 	IsLeftHand
+				SourceMarkerXOffset_Standard = Offset_Sneak_Left_X
+				SourceMarkerYOffset_Standard = Offset_Sneak_Left_Y
+				SourceMarkerZOffset_Standard = Offset_Sneak_Left_Z
+			Else
+				SourceMarkerXOffset_Standard = Offset_Sneak_Right_X
+				SourceMarkerYOffset_Standard = Offset_Sneak_Right_Y
+				SourceMarkerZOffset_Standard = Offset_Sneak_Right_Z
+			EndIf
+		EndIf
+	
+	;	SourceMarkerRef.MoveTo(akSource, (cos(AngleZ)*SourceMarkerXOffset_Standard - sin(AngleZ)*SourceMarkerYOffset_Standard), (cos(AngleZ)*SourceMarkerYOffset_Standard + sin(AngleZ)*SourceMarkerXOffset_Standard), SourceMarkerZOffset_Standard) 
+		
+	;	DestinationMarkerRef.MoveTo(akSource, DistanceVar * Math.Sin(AngleX) * Math.Cos(AngleZ), DistanceVar * Math.Sin(AngleX) * Math.Sin(AngleZ), DistanceVar * Math.Cos(AngleX) + HeightVar)
+	;	CastSpellFromRef(akSource, akSpell, DestinationMarkerRef, SourceMarkerRef)
+		
+		Float SourcePosX = akSource.GetPositionX()
+		Float SourcePosY = akSource.GetPositionY()
+		Float SourcePosZ = akSource.GetPositionZ()
+
+		CastSpellFromPointToPoint(akSource, akSpell, (SourcePosX + (cos(AngleZ)*SourceMarkerXOffset_Standard - sin(AngleZ)*SourceMarkerYOffset_Standard)), (SourcePosY + (cos(AngleZ)*SourceMarkerYOffset_Standard + sin(AngleZ)*SourceMarkerXOffset_Standard)), (SourcePosZ + SourceMarkerZOffset_Standard), (SourcePosX + (DistanceVar * Math.Sin(AngleX) * Math.Cos(AngleZ))), (SourcePosY + (DistanceVar * Math.Sin(AngleX) * Math.Sin(AngleZ))), (SourcePosZ + (DistanceVar * Math.Cos(AngleX) + HeightVar)))
+	
+	;	DestinationMarkerRef.Disable()
+	;	SourceMarkerRef.Disable()
+	;	Utility.Wait(0.5)
+	;	DestinationMarkerRef.Delete()    
+	;	SourceMarkerRef.Delete()
+EndFunction
+
+
+; ============================= WIP Functions =============================
 
 ;Function RegisterForCollision(ObjectReference akObject) global native
 
