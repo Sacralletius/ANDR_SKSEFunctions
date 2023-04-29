@@ -56,6 +56,12 @@ auto rot_at(const RE::NiPoint3& from, const RE::NiPoint3& to) { return rot_at(to
 
 ///// Actual new functions /////
 
+// Papyrus: Int Function GetAndrealphusExtenderVersion() Global Native
+// Returns the version number of the mod.
+int GetAndrealphusExtenderVersion(RE::StaticFunctionTag*) { 
+    return 142; 
+}
+
 // Papyrus: Function CastEnchantment(Actor akSource, Enchantment akEnchantment, Actor akTarget)
 // Cast the akEnchantment from the akSource to the akTarget.
 void CastEnchantment(RE::StaticFunctionTag*, RE::Actor* akSource, RE::EnchantmentItem* akEnchantment,
@@ -383,6 +389,7 @@ void CastSpellFromPointToPoint(RE::StaticFunctionTag*, RE::Actor* akSource, RE::
 RE::Projectile::LaunchData::~LaunchData() {}
 
 bool PapyrusFunctions(RE::BSScript::IVirtualMachine* vm) {
+    vm->RegisterFunction("GetAndrealphusExtenderVersion", "ANDR_PapyrusFunctions", GetAndrealphusExtenderVersion);
     vm->RegisterFunction("CastEnchantment", "ANDR_PapyrusFunctions", CastEnchantment);
     vm->RegisterFunction("CastPotion", "ANDR_PapyrusFunctions", CastPotion);
     vm->RegisterFunction("CastIngredient", "ANDR_PapyrusFunctions", CastIngredient);

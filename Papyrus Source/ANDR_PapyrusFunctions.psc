@@ -4,6 +4,11 @@ Import Math
 
 ; ============================= NATIVE FUNCTIONS =============================
 
+Int Function GetAndrealphusExtenderVersion() Global Native
+{
+- Return value: an integer string that's the version number of this mod. (without the dots, so for instance 1.4.1 -> 141)
+}
+
 Function CastEnchantment(Actor akSource, Enchantment akEnchantment, Actor akTarget) global native
 { 
 - akSource: The Actor from which to cast the Enchantment.
@@ -155,6 +160,12 @@ EndFunction
 
 
 ; ============================= WIP Functions =============================
+
+;Function SetRefAsNoAIAcquire(ObjectReference akObject, Bool SetNoAIAquire) global native
+;{
+;- akObject: the objectreference
+;- SetNoAIAquire: to disable or enable SetNoAIAquire field. 
+;}
 
 ;Function RegisterForCollision(ObjectReference akObject) global native
 
