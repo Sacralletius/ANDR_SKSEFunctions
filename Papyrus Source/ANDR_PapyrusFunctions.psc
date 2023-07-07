@@ -65,6 +65,12 @@ ActiveMagicEffect Function GetActiveMagicEffectFromActor(Actor akActor, MagicEff
 - Returns: the instance (ActiveMagicEffect) of akMagicEffect on the akActor.
 }
 
+Function SetRefAsNoAIAcquire(ObjectReference akObject, Bool SetNoAIAquire) global native
+{
+- akObject: the objectreference
+- SetNoAIAquire: to disable or enable SetNoAIAquire field. 
+}
+
 Function CastSpellFromRef(Actor akSource, Spell akSpell, ObjectReference akTarget, ObjectReference akOriginRef) global native
 { 
 - akSource: The caster of the spell.
@@ -161,11 +167,42 @@ EndFunction
 
 ; ============================= WIP Functions =============================
 
-;Function SetRefAsNoAIAcquire(ObjectReference akObject, Bool SetNoAIAquire) global native
+;Function SetObjectRefFlag(ObjectReference akObject, Int FlagInt, Bool TurnOn)
 ;{
 ;- akObject: the objectreference
-;- SetNoAIAquire: to disable or enable SetNoAIAquire field. 
+;- FlagInt: the Int representing the flag.
+	;0	kIsGroundPiece 
+	;1	kCollisionsDisabled -> unknown?
+	;2	kDeleted 
+	;3	kHiddenFromLocalMap -> only for statics!
+	;4	kTurnOffFire 
+	;5	kInaccessible -> only for doors!
+	;6	kLODRespectsEnableState  -> only for statics!
+	;7	kStartsDead  -> only for actors!
+	;8	kDoesntLightWater 
+	;9	kMotionBlur  -> only for statics!
+	;10	kPersistent 
+	;11	kInitiallyDisabled 
+	;12	kIgnored 
+	;13	kStartUnconscious  -> only for actors!
+	;14	kSkyMarker 
+	;15	kHarvested   -> only for trees!
+	;16	kIsFullLOD   -> only for actors!
+	;17	kNeverFades   -> only for lights!
+	;18	kDoesntLightLandscape 
+	;19	kIgnoreFriendlyHits   -> only for actors!
+	;20	kNoAIAcquire 
+	;21	kCollisionGeometry_Filter 
+	;22	kCollisionGeometry_BoundingBox 
+	;23	kReflectedByAutoWater 
+	;24	kDontHavokSettle 
+	;25	kGround 
+	;26	kRespawns 
+	;27	kMultibound 
+; - TurnOn: To turn the flag on or off.
 ;}
+
+
 
 ;Function RegisterForCollision(ObjectReference akObject) global native
 
