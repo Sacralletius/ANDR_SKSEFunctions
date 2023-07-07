@@ -59,7 +59,7 @@ auto rot_at(const RE::NiPoint3& from, const RE::NiPoint3& to) { return rot_at(to
 // Papyrus: Int Function GetAndrealphusExtenderVersion() Global Native
 // Returns the version number of the mod.
 int GetAndrealphusExtenderVersion(RE::StaticFunctionTag*) { 
-    return 142; 
+    return 143; 
 }
 
 // Papyrus: Function CastEnchantment(Actor akSource, Enchantment akEnchantment, Actor akTarget)
@@ -143,6 +143,15 @@ RE::ActiveEffect* GetActiveMagicEffectFromActor(RE::StaticFunctionTag*, RE::Acto
     logger::info("Effect is none.");
     return nullptr;
 }
+
+void SetRefAsNoAIAcquire(RE::StaticFunctionTag*, RE::TESObjectREFR* akObject, bool SetNoAIAquire) {
+    if (SetNoAIAquire == true) {
+        akObject->formFlags |= RE::TESForm::RecordFlags::kNoAIAcquire;
+    } else {
+        akObject->formFlags &= ~RE::TESForm::RecordFlags::kNoAIAcquire;
+    }
+}
+
 
 // Papyrus: Function CastSpellFromHand(Actor akSource, Spell akSpell, ObjectReference akTarget, ObjectReference akOriginRef) global native
 // Cast a spell from the hand defined in PositionInt at the akTarget.
@@ -398,9 +407,10 @@ bool PapyrusFunctions(RE::BSScript::IVirtualMachine* vm) {
     vm->RegisterFunction("GetEffectiveIngredientCost", "ANDR_PapyrusFunctions", GetEffectiveIngredientCost);
     vm->RegisterFunction("GetEffectiveScrollCost", "ANDR_PapyrusFunctions", GetEffectiveScrollCost);
     vm->RegisterFunction("GetActiveMagicEffectFromActor", "ANDR_PapyrusFunctions", GetActiveMagicEffectFromActor);
+    vm->RegisterFunction("SetRefAsNoAIAcquire", "ANDR_PapyrusFunctions", SetRefAsNoAIAcquire);
     vm->RegisterFunction("CastSpellFromRef", "ANDR_PapyrusFunctions", CastSpellFromRef);
     vm->RegisterFunction("CastSpellFromPointToPoint", "ANDR_PapyrusFunctions", CastSpellFromPointToPoint);
-//    vm->RegisterFunction("CastSpellFromHand", "ANDR_PapyrusFunctions", CastSpellFromHand);
+    //    vm->RegisterFunction("CastSpellFromHand", "ANDR_PapyrusFunctions", CastSpellFromHand);
     return true;
 }
 
