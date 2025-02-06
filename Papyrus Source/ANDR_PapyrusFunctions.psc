@@ -164,6 +164,34 @@ Function CastSpellFromHand(Actor akSource, Spell akSpell, Bool IsLeftHand, Float
 
 EndFunction
 
+Function CastSpellFromRefAimed(Actor akSource, Spell akSpell, ObjectReference akOriginRef) global
+	{ 
+	- akSource: The caster of the spell.
+	- akSpell: Spell to cast.
+	- akOriginRef: The ObjectReference where to cast the spell from.
+	}
+	; This can be used to have an actor cast a spell from a ref to whatever the ref is pointing.
+
+	Float OriginPosX = akOriginRef.GetPositionX()
+	Float OriginPosY = akOriginRef.GetPositionY()
+	Float OriginPosZ = akOriginRef.GetPositionZ()
+
+	Float DistanceVar = 2000.0
+	Float HeightVar = 100.0
+
+	Float GameX = akSource.GetAngleX()
+	Float GameZ = akSource.GetAngleZ()
+	Float AngleX = 90 + GameX  
+	Float AngleZ
+
+	If GameZ < 90 
+		AngleZ = 90 - GameZ
+	Else
+		AngleZ = 450 - GameZ
+	EndIf
+	
+	CastSpellFromPointToPoint(akSource, akSpell, (OriginPosX + (cos(AngleZ) - sin(AngleZ))), (OriginPosY + (cos(AngleZ) + sin(AngleZ))), OriginPosZ, (OriginPosX + (DistanceVar * Math.Sin(AngleX) * Math.Cos(AngleZ))), (OriginPosY + (DistanceVar * Math.Sin(AngleX) * Math.Sin(AngleZ))), (OriginPosZ + (DistanceVar * Math.Cos(AngleX) + HeightVar)))
+EndFunction
 
 ; ============================= WIP Functions =============================
 

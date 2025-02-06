@@ -146,9 +146,9 @@ RE::ActiveEffect* GetActiveMagicEffectFromActor(RE::StaticFunctionTag*, RE::Acto
 
 void SetRefAsNoAIAcquire(RE::StaticFunctionTag*, RE::TESObjectREFR* akObject, bool SetNoAIAquire) {
     if (SetNoAIAquire == true) {
-        akObject->formFlags |= RE::TESForm::RecordFlags::kNoAIAcquire;
+        akObject->formFlags |= RE::TESObjectREFR::RecordFlags::RecordFlag::kNoAIAcquire;
     } else {
-        akObject->formFlags &= ~RE::TESForm::RecordFlags::kNoAIAcquire;
+        akObject->formFlags &= ~RE::TESObjectREFR::RecordFlags::RecordFlag::kNoAIAcquire;
     }
 }
 
@@ -416,7 +416,7 @@ bool PapyrusFunctions(RE::BSScript::IVirtualMachine* vm) {
 
 SKSEPluginLoad(const SKSE::LoadInterface* skse) {
     SKSE::Init(skse);
-    SetupLog();
+//    SetupLog();
     SKSE::GetPapyrusInterface()->Register(PapyrusFunctions);
     return true;
 }
