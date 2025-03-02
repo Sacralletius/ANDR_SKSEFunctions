@@ -91,6 +91,22 @@ Function CastSpellFromPointToPoint(Actor akSource, Spell akSpell, Float StartPoi
 - EndPoint_Z: The Z position of the ending point.
 }
 
+Function LaunchAmmo(Actor akCaster, Ammo akAmmo, Weapon akWeapon, String NodeSource = "", Int iSlot = -1, ObjectReference akTarget = None, Potion akPoison = None) Global Native
+{
+;/ based off of fenix31415's and po3's launcharrow function
+- akCaster: the actor "casting" the ammo.
+- akWeapon: the weapon that's being used.
+- NodeSource: the name of the skeleton bone node of the akCaster, the ammo is launch from.
+- iSlot:
+	-1 	Uses NodeSource or default weapon node if empty
+	0 	Left hand node
+	1 	Right hand node
+	2 	Head node
+	; iSlot might be buggy though, best practice is to use an actual node source
+- akTarget: the target of the ammo.	(not sure if this is needed.)
+- akPoison: the poison being applied. (might be buggy)	
+}
+
 ; ============================= NON-NATIVE FUNCTIONS =============================
 
 Function CastSpellFromHand(Actor akSource, Spell akSpell, Bool IsLeftHand, Float DistanceVar = 2000.0, Float HeightVar = 100.0, Float Offset_NoSneak_Left_X = 30.0, Float Offset_NoSneak_Left_Y = 30.0, Float Offset_NoSneak_Left_Z = 110.0, Float Offset_NoSneak_Right_X = 30.0, Float Offset_NoSneak_Right_Y = -30.0, Float Offset_NoSneak_Right_Z = 110.0, Float Offset_Sneak_Left_X = 30.0, Float Offset_Sneak_Left_Y = 30.0, Float Offset_Sneak_Left_Z = 70.0, Float Offset_Sneak_Right_X = 30.0, Float Offset_Sneak_Right_Y = -30.0, Float Offset_Sneak_Right_Z = 70.0)	global
@@ -179,8 +195,8 @@ Function CastSpellFromRefAimed(Actor akSource, Spell akSpell, ObjectReference ak
 	Float DistanceVar = 2000.0
 	Float HeightVar = 100.0
 
-	Float GameX = akSource.GetAngleX()
-	Float GameZ = akSource.GetAngleZ()
+	Float GameX = akOriginRef.GetAngleX()
+	Float GameZ = akOriginRef.GetAngleZ()
 	Float AngleX = 90 + GameX  
 	Float AngleZ
 
@@ -191,6 +207,9 @@ Function CastSpellFromRefAimed(Actor akSource, Spell akSpell, ObjectReference ak
 	EndIf
 	
 	CastSpellFromPointToPoint(akSource, akSpell, (OriginPosX + (cos(AngleZ) - sin(AngleZ))), (OriginPosY + (cos(AngleZ) + sin(AngleZ))), OriginPosZ, (OriginPosX + (DistanceVar * Math.Sin(AngleX) * Math.Cos(AngleZ))), (OriginPosY + (DistanceVar * Math.Sin(AngleX) * Math.Sin(AngleZ))), (OriginPosZ + (DistanceVar * Math.Cos(AngleX) + HeightVar)))
+;	CastSpellFromPointToPoint(akSource, akSpell, OriginPosX, OriginPosY, OriginPosZ, (OriginPosX + (DistanceVar * Math.Sin(AngleX) * Math.Cos(AngleZ))), (OriginPosY + (DistanceVar * Math.Sin(AngleX) * Math.Sin(AngleZ))), (OriginPosZ + (DistanceVar * Math.Cos(AngleX) + HeightVar)))
+;	CastSpellFromPointToPoint(akSource, akSpell, (OriginPosX + (cos(AngleZ)*30.0)), (OriginPosY + (sin(AngleZ)*30.0)), (OriginPosZ + 110.0), (OriginPosX + (DistanceVar * Math.Sin(AngleX) * Math.Cos(AngleZ))), (OriginPosY + (DistanceVar * Math.Sin(AngleX) * Math.Sin(AngleZ))), (OriginPosZ + (DistanceVar * Math.Cos(AngleX) + HeightVar)))
+
 EndFunction
 
 ; ============================= WIP Functions =============================
@@ -242,3 +261,10 @@ EndFunction
 ; This is based of OnTrapHitStart(), but that function is objectreference function and needs to have one of its collision layers in the mesh to be set as L_TRAP.
 ; akObject: The object that's colliding with something or someone.
 ; akTarget: The object or actor being hit.
+
+
+;Function SetActorLevel(actor akActor, Int iLevel)
+;{Requires ConsoleUtil. Sets level of an actor.}
+;	ConsoleUtil.SetSelectedReference(akActor)
+;	ConsoleUtil.ExecuteCommand("setlevel " + iLevel + "")
+;EndFuntion
