@@ -91,9 +91,10 @@ Function CastSpellFromPointToPoint(Actor akSource, Spell akSpell, Float StartPoi
 - EndPoint_Z: The Z position of the ending point.
 }
 
-Function LaunchAmmo(Actor akCaster, Ammo akAmmo, Weapon akWeapon, String NodeSource = "", Int iSlot = -1, ObjectReference akTarget = None, Potion akPoison = None) Global Native
+
+Function LaunchAmmo(Actor akCaster, Ammo akAmmo, Weapon akWeapon, String NodeSource = "", Int iSlot = -1, ObjectReference akTarget = None, Potion akPoison = None, Projectile akProjectile) Global Native
 {
-;/ based off of fenix31415's and po3's launcharrow function
+; based off of fenix31415's and po3's launcharrow function
 - akCaster: the actor "casting" the ammo.
 - akWeapon: the weapon that's being used.
 - NodeSource: the name of the skeleton bone node of the akCaster, the ammo is launch from.
@@ -104,7 +105,8 @@ Function LaunchAmmo(Actor akCaster, Ammo akAmmo, Weapon akWeapon, String NodeSou
 	2 	Head node
 	; iSlot might be buggy though, best practice is to use an actual node source
 - akTarget: the target of the ammo.	(not sure if this is needed.)
-- akPoison: the poison being applied. (might be buggy)	
+- akPoison: the poison being applied. (might be buggy)
+- akProjectile: the base projectile.	
 }
 
 ; ============================= NON-NATIVE FUNCTIONS =============================
@@ -214,57 +216,167 @@ EndFunction
 
 ; ============================= WIP Functions =============================
 
-;Function SetObjectRefFlag(ObjectReference akObject, Int FlagInt, Bool TurnOn)
-;{
-;- akObject: the objectreference
-;- FlagInt: the Int representing the flag.
-	;0	kIsGroundPiece 
-	;1	kCollisionsDisabled -> unknown?
-	;2	kDeleted 
-	;3	kHiddenFromLocalMap -> only for statics!
-	;4	kTurnOffFire 
-	;5	kInaccessible -> only for doors!
-	;6	kLODRespectsEnableState  -> only for statics!
-	;7	kStartsDead  -> only for actors!
-	;8	kDoesntLightWater 
-	;9	kMotionBlur  -> only for statics!
-	;10	kPersistent 
-	;11	kInitiallyDisabled 
-	;12	kIgnored 
-	;13	kStartUnconscious  -> only for actors!
-	;14	kSkyMarker 
-	;15	kHarvested   -> only for trees!
-	;16	kIsFullLOD   -> only for actors!
-	;17	kNeverFades   -> only for lights!
-	;18	kDoesntLightLandscape 
-	;19	kIgnoreFriendlyHits   -> only for actors!
-	;20	kNoAIAcquire 
-	;21	kCollisionGeometry_Filter 
-	;22	kCollisionGeometry_BoundingBox 
-	;23	kReflectedByAutoWater 
-	;24	kDontHavokSettle 
-	;25	kGround 
-	;26	kRespawns 
-	;27	kMultibound 
-; - TurnOn: To turn the flag on or off.
-;}
+;/
+Function SetObjectRefFlag(ObjectReference akObject, Int FlagInt, Bool TurnOn)
+{
+- akObject: the objectreference
+- FlagInt: the Int representing the flag.
+	0	kIsGroundPiece 
+	1	kCollisionsDisabled -> unknown?
+	2	kDeleted 
+	3	kHiddenFromLocalMap -> only for statics!
+	4	kTurnOffFire 
+	5	kInaccessible -> only for doors!
+	6	kLODRespectsEnableState  -> only for statics!
+	7	kStartsDead  -> only for actors!
+	8	kDoesntLightWater 
+	9	kMotionBlur  -> only for statics!
+	10	kPersistent 
+	11	kInitiallyDisabled 
+	12	kIgnored 
+	13	kStartUnconscious  -> only for actors!
+	14	kSkyMarker 
+	15	kHarvested   -> only for trees!
+	16	kIsFullLOD   -> only for actors!
+	17	kNeverFades   -> only for lights!
+	18	kDoesntLightLandscape 
+	19	kIgnoreFriendlyHits   -> only for actors!
+	20	kNoAIAcquire 
+	21	kCollisionGeometry_Filter 
+	22	kCollisionGeometry_BoundingBox 
+	23	kReflectedByAutoWater 
+	24	kDontHavokSettle 
+	25	kGround 
+	26	kRespawns 
+	27	kMultibound 
+ - TurnOn: To turn the flag on or off.
+}
+/;
 
 
+;/
+Function RegisterForCollision(ObjectReference akObject) global native
 
-;Function RegisterForCollision(ObjectReference akObject) global native
+Used for Registering whenever an object physically colides with an actor.
+akObject: the object we are monitoring
+/;
 
-; Used for Registering whenever an object physically colides with an actor.
-; akObject: the object we are monitoring
+;/
+Function OnObjectCollision(ObjectReference akObject, ObjectReference akTarget) global native
 
-;Function OnObjectCollision(ObjectReference akObject, ObjectReference akTarget) global native
+This is based of OnTrapHitStart(), but that function is objectreference function and needs to have one of its collision layers in the mesh to be set as L_TRAP.
+akObject: The object that's colliding with something or someone.
+akTarget: The object or actor being hit.
+/;
 
-; This is based of OnTrapHitStart(), but that function is objectreference function and needs to have one of its collision layers in the mesh to be set as L_TRAP.
-; akObject: The object that's colliding with something or someone.
-; akTarget: The object or actor being hit.
+;/
+Function SetActorLevel(actor akActor, Int iLevel)
+{Requires ConsoleUtil. Sets level of an actor.}
+	ConsoleUtil.SetSelectedReference(akActor)
+	ConsoleUtil.ExecuteCommand("setlevel " + iLevel + "")
+EndFuntion
+/;
 
 
-;Function SetActorLevel(actor akActor, Int iLevel)
-;{Requires ConsoleUtil. Sets level of an actor.}
-;	ConsoleUtil.SetSelectedReference(akActor)
-;	ConsoleUtil.ExecuteCommand("setlevel " + iLevel + "")
-;EndFuntion
+; wish list...
+
+;/
+InfoTopic Function GetCurrentDialogueTopic()  global native
+{Returns the InfoTopic that is currently being said by the NPC that's in the dialogue menu with the player.}
+/;
+
+;/
+Bool Function IsPlayerControlEnabled(Int iControlType)
+{Returns whether or not a speific player control is enabled
+iControlType can be:
+0: abMovement: player's movement controls. 
+1: abFighting: player's combat controls. 
+2: abCamSwitch: ability to switch point of view. 
+3: abLooking: player's look controls. 
+4: abSneaking: player's sneak controls. 
+5: abMenu: menu controls (Journal, Inventory, Pause, etc.). 
+6: abActivate: ability for player to activate objects. 
+7 abJournalTabs: all Journal tabs except System. 
+}
+/;
+
+;/
+Function SetPlayerControl(Bool bEnable, Int iControlType)
+{Disables the specified type of player controls.
+- bEnable: true to enable a control, false to disable it.
+- iControlType can be:
+0: abMovement: player's movement controls. 
+1: abFighting: player's combat controls. 
+2: abCamSwitch: ability to switch point of view. 
+3: abLooking: player's look controls. 
+4: abSneaking: player's sneak controls. 
+5: abMenu: menu controls (Journal, Inventory, Pause, etc.). 
+6: abActivate: ability for player to activate objects. 
+7 abJournalTabs: all Journal tabs except System. 
+}
+/;
+
+;/ 
+Function ReplaceBookText(Book akBook, String sOriginalText, String sNewText)
+{Replaces text in a book.
+- akBook: the book to edit.
+- sOriginalText: the original string to replace.
+- sNewtext: the new string to replace the original string with.
+}
+/;
+
+;/
+Function SetObjectAsFavorite(Form akObject, Int iHotkey = 0)	
+{Sets an akObject as favorite, with akHotkey as possible hotkey. 
+- iHotKey: 0 means no hotkey (default value) and 1-9 will be the requested hotkey. -1 will mean no longer favorited.
+;Example: SetObjectAsFavorite(IronSword, 3) -> Set an IronSword as favorite and assign to hotkey 3.
+}
+/;
+
+;/
+Int Function GetHotKeyFavoriteObject(Form akForm)	;Gets the hotkey of item as integer. -1 means not favorited, 0 means favorited but no hotkey and 1-9 will be the hotkey.
+	;Example:
+	;If GetHotKeyFavoriteObject(IronSword) == 3
+	;debug.notification("An IronSword is currently bound to 3.")
+	;EndIf
+/;
+
+;/
+Form Function GetObjectFavoriteHotkey(Int iHotkey)	;Gets the object currently bound to the hotkey. Returns a none if nothing is bound to the key.
+	;If GetObjectFavoriteHotkey(3) == IronSword
+	;debug.notification("Hotkey 3 is assigned to an IronSword.")
+	;EndIf
+/;	
+
+;/
+Function MarkInventoryAsOwned(ObjectReference akInventory, Actor akOwnerActor = None, Faction akOwnerfaction = None )	;Marks all items in the akInventory (container or actor ref) as owned by akOwner (either an actor or faction).
+	If akInventory is an actor this should include outfit, death item and inventory.
+	If both akOwnerActor and akOwnerfaction are none -> remove ownership
+/;
+
+;/
+Function SetControlledActor(Actor akActor)	;akActor will be fully controllable, with them being able to move through load-doors, fully able to use all animations, and able to see their inventory, spells and perks.
+	;Less than 0.5 second script load should be ideal, to make swapping control in combat viable.
+	;note: It's unlikely this one can be done easily. I've attempted it, but couldn't get it to work.
+/;	
+
+;/
+Function SetPlayerCombatAIDriven()	
+; same as SetPlayerAIDriven, but for combat AI https://ck.uesp.net/wiki/SetPlayerAIDriven_-_Game
+/;	
+
+;/
+Actor Function GetCommandingActor(Actor akActor)
+; gets the commanding actor of this actor.
+/;
+
+;/
+Actor[] Function GetCommandedActors(Actor akActor)
+; gets all commanded actors of this actor.
+/;
+
+;/
+Function SetCommandingActor(Actor CommandedActor, Actor CommandingActor = None)
+; sets makes actors commanded and commanding of each other.
+; if CommandingActor is None, clears the commanded actor from being commanded.
+/;

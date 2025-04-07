@@ -118,7 +118,8 @@ void SetRefAsNoAIAcquire(RE::StaticFunctionTag*, RE::TESObjectREFR* akObject, bo
 
 inline void LaunchAmmo(RE::StaticFunctionTag*, RE::Actor* a_actor, RE::TESAmmo* a_ammo, RE::TESObjectWEAP* a_weapon,
                         RE::BSFixedString a_nodeName, std::int32_t a_source, RE::TESObjectREFR* a_target,
-                        RE::AlchemyItem* a_poison) {
+                        RE::AlchemyItem* a_poison, RE::BGSProjectile* ProjBase) {
+/*
     logger::info("ANDR_PF - LaunchAmmo(): started.");
     
     if (!a_actor) {
@@ -135,8 +136,9 @@ inline void LaunchAmmo(RE::StaticFunctionTag*, RE::Actor* a_actor, RE::TESAmmo* 
             logger::info("ANDR_PF - LaunchAmmo(): a_weapon is none.");
         return;
      }
-
-     SKSE::GetTaskInterface()->AddTask([a_actor, a_ammo, a_weapon, a_nodeName, a_source, a_target, a_poison]() {
+*/
+     SKSE::GetTaskInterface()->AddTask([a_actor, a_ammo, a_weapon, a_nodeName, a_source, a_target, a_poison,
+                                        ProjBase]() {
          RE::NiAVObject* fireNode = nullptr;
          auto root = a_actor->GetCurrent3D();
          switch (a_source) {
@@ -179,13 +181,40 @@ inline void LaunchAmmo(RE::StaticFunctionTag*, RE::Actor* a_actor, RE::TESAmmo* 
              angles.x = a_actor->GetAimAngle();
              angles.z = a_actor->GetAimHeading();
          }
+
+        if (fireNode) {
+             logger::info("FireNode found: {}", fireNode->name.c_str());
+             logger::info("Origin: x={}, y={}, z={}", origin.x, origin.y, origin.z);
+             logger::info("Angles: pitch(x)={}, yaw(z)={}", angles.x, angles.z);
+         } else {
+             logger::info("FireNode is null; using actor position: x={}, y={}, z={}", origin.x, origin.y, origin.z);
+             logger::info("Aim angles: pitch(x)={}, yaw(z)={}", angles.x, angles.z);
+         }
+
+
          RE::ProjectileHandle handle{};
          RE::Projectile::LaunchData launchData(a_actor, origin, angles, a_ammo, a_weapon);
 
-         launchData.desiredTarget = a_target;
-         launchData.poison = a_poison;
-         launchData.enchantItem = a_weapon->formEnchanting;
+         if (a_target) { 
+             launchData.desiredTarget = a_target; 
+         }
+         if (a_poison) {
+             launchData.poison = a_poison;        
+         }
+         
+//       launchData.enchantItem = a_weapon->formEnchanting;
          launchData.autoAim = false;
+         launchData.projectileBase = ProjBase;
+
+//         auto projBase = launchData.projectileBase;
+//         auto shooter = launchData.shooter;
+//         auto weaponSource = launchData.weaponSource;
+//         auto ammoSource = launchData.ammoSource;
+//         logger::info("ProjBase is: {} (FormID: {:08X})", projBase->GetName(), projBase->formID);
+//        logger::info("shooter is: {} (FormID: {:08X})", shooter->GetName(), shooter->formID);
+//         logger::info("weaponSource is: {} (FormID: {:08X})", weaponSource->GetName(), weaponSource->formID);
+//         logger::info("ammoSource is: {} (FormID: {:08X})", ammoSource->GetName(), ammoSource->formID);
+
 
          RE::Projectile::Launch(&handle, launchData);
      });
