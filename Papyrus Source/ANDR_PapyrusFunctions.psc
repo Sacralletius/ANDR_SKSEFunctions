@@ -92,7 +92,7 @@ Function CastSpellFromPointToPoint(Actor akSource, Spell akSpell, Float StartPoi
 }
 
 
-Function LaunchAmmo(Actor akCaster, Ammo akAmmo, Weapon akWeapon, String NodeSource = "", Int iSlot = -1, ObjectReference akTarget = None, Potion akPoison = None, Projectile akProjectile) Global Native
+Function LaunchAmmo(Actor akCaster, Ammo akAmmo, Weapon akWeapon, String NodeSource = "", Int iSlot = -1, ObjectReference akTarget = None, Potion akPoison = None, Projectile akProjectile, Actor akCombatTarget = None) Global Native
 {
 ; based off of fenix31415's and po3's launcharrow function
 - akCaster: the actor "casting" the ammo.
@@ -106,7 +106,8 @@ Function LaunchAmmo(Actor akCaster, Ammo akAmmo, Weapon akWeapon, String NodeSou
 	; iSlot might be buggy though, best practice is to use an actual node source
 - akTarget: the target of the ammo.	(not sure if this is needed.)
 - akPoison: the poison being applied. (might be buggy)
-- akProjectile: the base projectile.	
+- akProjectile: the base projectile.
+- akCombatTarget: the combat target for NPCs.	
 }
 
 ; ============================= NON-NATIVE FUNCTIONS =============================
@@ -282,7 +283,7 @@ EndFuntion
 
 ;/
 InfoTopic Function GetCurrentDialogueTopic()  global native
-{Returns the InfoTopic that is currently being said by the NPC that's in the dialogue menu with the player.}
+{Returns the InfoTopic that is currently being said by an NPC.}
 /;
 
 ;/

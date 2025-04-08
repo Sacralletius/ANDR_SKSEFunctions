@@ -116,29 +116,76 @@ void SetRefAsNoAIAcquire(RE::StaticFunctionTag*, RE::TESObjectREFR* akObject, bo
     }
 }
 
+// stuff for LaunchAmmo's 3rd attempt
+
+/*
+RE::NiPoint3 GetEyePosition(RE::Actor* actor) {
+    float eyeHeight = actor->GetHeight() * 0.9f;
+    auto pos = actor->GetPosition();
+    pos.z += eyeHeight;
+    return pos;
+}
+
+struct LaunchParams {
+    RE::NiPoint3 origin;
+    float pitch;
+    float yaw;
+};
+
+LaunchParams GetLaunchOriginAndAngles(RE::Actor* actor, RE::NiAVObject* fireNode, RE::Actor* CombatTarget) {
+    LaunchParams result{};
+
+    auto origin = fireNode->world.translate;
+
+    RE::NiPoint3 forward;
+
+    if (actor->IsPlayerRef()) {
+        auto playerCam = RE::PlayerCamera::GetSingleton();
+
+        if (playerCam && playerCam->cameraRoot) {
+            auto cameraMatrix = playerCam->cameraRoot->world.rotate;
+            forward = cameraMatrix * RE::NiPoint3(0.0f, 1.0f, 0.0f);
+        } else {
+            float pitch = actor->GetAngleX();
+            float yaw = actor->GetAngleZ();
+
+            forward.x = std::cos(pitch) * std::cos(yaw);
+            forward.y = std::cos(pitch) * std::sin(yaw);
+            forward.z = std::sin(pitch);
+        }
+
+    } else {
+        if (auto target = CombatTarget) {
+            auto targetPos = GetEyePosition(target);
+            forward.x = targetPos.x - origin.x;
+            forward.y = targetPos.y - origin.y;
+            forward.z = targetPos.z - origin.z;
+            forward.Unitize();
+        } else {
+            float pitch = actor->GetAngleX();
+            float yaw = actor->GetAngleZ();
+
+            forward.x = std::cos(pitch) * std::cos(yaw);
+            forward.y = std::cos(pitch) * std::sin(yaw);
+            forward.z = std::sin(pitch);
+        }
+    }
+
+    result.pitch = std::asin(forward.z); 
+    result.yaw = std::atan2(forward.y, forward.x);
+
+    return result;
+}
+*/
+
 inline void LaunchAmmo(RE::StaticFunctionTag*, RE::Actor* a_actor, RE::TESAmmo* a_ammo, RE::TESObjectWEAP* a_weapon,
                         RE::BSFixedString a_nodeName, std::int32_t a_source, RE::TESObjectREFR* a_target,
-                        RE::AlchemyItem* a_poison, RE::BGSProjectile* ProjBase) {
-/*
-    logger::info("ANDR_PF - LaunchAmmo(): started.");
-    
-    if (!a_actor) {
-            logger::info("ANDR_PF - LaunchAmmo(): a_actor is none.");
-        return;
-     }
+                        RE::AlchemyItem* a_poison, RE::BGSProjectile* ProjBase, RE::Actor* a_combattarget) {
+ 
+//   ProjBase needs to be assigned through Papyrus. Using a_ammo->data.projectile gives an invalid value. As does getting it through launchData.
 
-     if (!a_ammo) {
-            logger::info("ANDR_PF - LaunchAmmo(): a_ammo is none.");
-        return;
-     }
-
-     if (!a_weapon) {
-            logger::info("ANDR_PF - LaunchAmmo(): a_weapon is none.");
-        return;
-     }
-*/
-     SKSE::GetTaskInterface()->AddTask([a_actor, a_ammo, a_weapon, a_nodeName, a_source, a_target, a_poison,
-                                        ProjBase]() {
+     SKSE::GetTaskInterface()->AddTask([a_actor, a_ammo, a_weapon, a_nodeName, a_source, a_target, a_poison, ProjBase,
+                                       a_combattarget]() {
          RE::NiAVObject* fireNode = nullptr;
          auto root = a_actor->GetCurrent3D();
          switch (a_source) {
@@ -171,9 +218,16 @@ inline void LaunchAmmo(RE::StaticFunctionTag*, RE::Actor* a_actor, RE::TESAmmo* 
          }
          RE::NiPoint3 origin;
          RE::Projectile::ProjectileRot angles{};
+
+//      First attempt -> works in 1st person, but aim is off in 3rd person and for NPCs.
          if (fireNode) {
              origin = fireNode->world.translate;
-             a_actor->Unk_A0(fireNode, angles.x, angles.z, origin);
+
+//           This line didsn't work in 3rd person or for NPCs... -> aim is completely off (shoots up to the sky).
+//           a_actor->Unk_A0(fireNode, angles.x, angles.z, origin);             
+
+             angles.x = a_actor->GetAimAngle();
+             angles.z = a_actor->GetAimHeading();
          } else {
              origin = a_actor->GetPosition();
              origin.z += 96.0f;
@@ -181,6 +235,72 @@ inline void LaunchAmmo(RE::StaticFunctionTag*, RE::Actor* a_actor, RE::TESAmmo* 
              angles.x = a_actor->GetAimAngle();
              angles.z = a_actor->GetAimHeading();
          }
+
+//      Second attempt -> didn't work: 1st person was fine, 3rd person and NPCs were completely off. (worse than 1st attempt)
+/* auto camera = RE::PlayerCamera::GetSingleton();
+
+         if (a_actor->IsPlayerRef()) {
+                      
+             if (camera->IsInFirstPerson()) {
+
+                 if (fireNode) {
+                     origin = fireNode->world.translate;
+     //             a_actor->Unk_A0(fireNode, angles.x, angles.z, origin);
+
+                     angles.x = a_actor->GetAimAngle();
+                     angles.z = a_actor->GetAimHeading();
+                 } else {
+                     origin = a_actor->GetPosition();
+                     origin.z += 96.0f;
+
+                     angles.x = a_actor->GetAimAngle();
+                     angles.z = a_actor->GetAimHeading();
+                 }
+
+             } else {
+
+                 if (fireNode) {
+                    origin = fireNode->world.translate;
+
+                    RE::NiPoint3 forward = fireNode->world.rotate * RE::NiPoint3{0, 1, 0};    // Y-axis is forward
+                    angles.x = std::asin(forward.z);                                        // pitch
+                    angles.z = std::atan2(forward.y, forward.x);                              // yaw
+                 }
+             }
+             
+         } else {
+         // For NPCs
+             if (fireNode) {
+                 origin = fireNode->world.translate;
+                 RE::NiPoint3 direction;
+                 
+                 if (a_combattarget) {
+                    RE::NiPoint3 targetPos = a_combattarget->GetPosition();
+                    RE::NiPoint3 delta = targetPos - origin;
+                    direction = delta / delta.Length();  // normalize
+
+                    angles.x = std::asin(direction.z);              // pitch
+                    angles.z = std::atan2(direction.y, direction.x);  // yaw
+                 } else {
+                    // fallback: fire straight ahead from actor rotation
+                    float actorAngleZ = a_actor->data.angle.z;
+                    angles.x = 0.0f;
+                    angles.z = actorAngleZ;
+                 }
+
+             } else {
+                 origin = a_actor->GetPosition();
+                 origin.z += 96.0f;
+
+                 angles.x = a_actor->GetAimAngle();
+                 angles.z = a_actor->GetAimHeading();
+             }  
+
+         }
+*/
+
+//       3rd attempt -> didn't work: 1st person, 3rd person and NPCs were completely off. (worse than 1st and 2nd attempt)
+//       auto params = GetLaunchOriginAndAngles(a_actor, fireNode, a_combattarget);
 
         if (fireNode) {
              logger::info("FireNode found: {}", fireNode->name.c_str());
@@ -190,7 +310,6 @@ inline void LaunchAmmo(RE::StaticFunctionTag*, RE::Actor* a_actor, RE::TESAmmo* 
              logger::info("FireNode is null; using actor position: x={}, y={}, z={}", origin.x, origin.y, origin.z);
              logger::info("Aim angles: pitch(x)={}, yaw(z)={}", angles.x, angles.z);
          }
-
 
          RE::ProjectileHandle handle{};
          RE::Projectile::LaunchData launchData(a_actor, origin, angles, a_ammo, a_weapon);
@@ -206,15 +325,9 @@ inline void LaunchAmmo(RE::StaticFunctionTag*, RE::Actor* a_actor, RE::TESAmmo* 
          launchData.autoAim = false;
          launchData.projectileBase = ProjBase;
 
-//         auto projBase = launchData.projectileBase;
-//         auto shooter = launchData.shooter;
-//         auto weaponSource = launchData.weaponSource;
-//         auto ammoSource = launchData.ammoSource;
-//         logger::info("ProjBase is: {} (FormID: {:08X})", projBase->GetName(), projBase->formID);
-//        logger::info("shooter is: {} (FormID: {:08X})", shooter->GetName(), shooter->formID);
-//         logger::info("weaponSource is: {} (FormID: {:08X})", weaponSource->GetName(), weaponSource->formID);
-//         logger::info("ammoSource is: {} (FormID: {:08X})", ammoSource->GetName(), ammoSource->formID);
-
+//      3rd attempt -> see above!
+ //        launchData.angleX = params.pitch;
+ //        launchData.angleZ = params.yaw;
 
          RE::Projectile::Launch(&handle, launchData);
      });
@@ -534,4 +647,4 @@ SKSEPluginLoad(const SKSE::LoadInterface* skse) {
     no longer be needed in the future? ---> This is a dtor.
 
     RE::Projectile::LaunchData::~LaunchData() {}
-    */
+ */
