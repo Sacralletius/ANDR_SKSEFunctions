@@ -116,221 +116,319 @@ void SetRefAsNoAIAcquire(RE::StaticFunctionTag*, RE::TESObjectREFR* akObject, bo
     }
 }
 
-// stuff for LaunchAmmo's 3rd attempt
+// START: Extra requirements for CastSpellFromRef and CastSpellFromPointToPoint -> instructions from Fenix
 
-/*
-RE::NiPoint3 GetEyePosition(RE::Actor* actor) {
-    float eyeHeight = actor->GetHeight() * 0.9f;
-    auto pos = actor->GetPosition();
-    pos.z += eyeHeight;
-    return pos;
-}
+    struct ProjectileRotCustom {
+	    float x, z;
+    };
 
-struct LaunchParams {
-    RE::NiPoint3 origin;
-    float pitch;
-    float yaw;
-};
+    typedef uint32_t (*cast_t)(RE::Actor* caster, RE::SpellItem* spel, const RE::NiPoint3& start_pos,
+						       const ProjectileRotCustom& rotcustom);
+    typedef uint32_t (*cast_CustomPos_t)(RE::Actor* caster, RE::SpellItem* spel, const RE::NiPoint3& start_pos,
+									     const ProjectileRotCustom& rotcustom);
 
-LaunchParams GetLaunchOriginAndAngles(RE::Actor* actor, RE::NiAVObject* fireNode, RE::Actor* CombatTarget) {
-    LaunchParams result{};
-
-    auto origin = fireNode->world.translate;
-
-    RE::NiPoint3 forward;
-
-    if (actor->IsPlayerRef()) {
-        auto playerCam = RE::PlayerCamera::GetSingleton();
-
-        if (playerCam && playerCam->cameraRoot) {
-            auto cameraMatrix = playerCam->cameraRoot->world.rotate;
-            forward = cameraMatrix * RE::NiPoint3(0.0f, 1.0f, 0.0f);
-        } else {
-            float pitch = actor->GetAngleX();
-            float yaw = actor->GetAngleZ();
-
-            forward.x = std::cos(pitch) * std::cos(yaw);
-            forward.y = std::cos(pitch) * std::sin(yaw);
-            forward.z = std::sin(pitch);
-        }
-
-    } else {
-        if (auto target = CombatTarget) {
-            auto targetPos = GetEyePosition(target);
-            forward.x = targetPos.x - origin.x;
-            forward.y = targetPos.y - origin.y;
-            forward.z = targetPos.z - origin.z;
-            forward.Unitize();
-        } else {
-            float pitch = actor->GetAngleX();
-            float yaw = actor->GetAngleZ();
-
-            forward.x = std::cos(pitch) * std::cos(yaw);
-            forward.y = std::cos(pitch) * std::sin(yaw);
-            forward.z = std::sin(pitch);
-        }
+    RE::EffectSetting* getAVEffectSetting(RE::MagicItem* mgitem) {
+	    using func_t = decltype(getAVEffectSetting);
+	    REL::Relocation<func_t> func{REL::RelocationID(11194, 11302)};
+	    return func(mgitem);
     }
 
-    result.pitch = std::asin(forward.z); 
-    result.yaw = std::atan2(forward.y, forward.x);
+    float SkyrimSE_c51f70(RE::NiPoint3* dir) {
+	    using func_t = decltype(SkyrimSE_c51f70);
+	    REL::Relocation<func_t> func{REL::RelocationID(68820, 70172)};
+	    return func(dir);
+    }
 
-    return result;
+    auto rot_at_custom(RE::NiPoint3 dir) {
+	    ProjectileRotCustom rotcustom;
+	    auto len = dir.Unitize();
+	    if (len == 0) {
+		    rotcustom = {0, 0};
+	    } else {
+		    float polar_angle = SkyrimSE_c51f70(&dir);
+		    rotcustom = {-asin(dir.z), polar_angle};
+	    }
+	    return rotcustom;
+    }
+
+    auto rot_at_custom(const RE::NiPoint3& from, const RE::NiPoint3& to) { return rot_at_custom(to - from); }
+
+// END: Extra requirements for CastSpellFromRef and CastSpellFromPointToPoint -> instructions from Fenix
+
+void CastSpellFromRef(RE::StaticFunctionTag*, RE::Actor* akSource, RE::SpellItem* akSpell, 
+					  RE::TESObjectREFR* akTarget, RE::TESObjectREFR* akOriginRef) {
+
+
+	auto NodePosition = akOriginRef->GetPosition();
+
+	logger::info("Position: X is {}, Y is {}, Z is {}.", NodePosition.x, NodePosition.y, NodePosition.z);
+
+	auto rotcustom = rot_at_custom(NodePosition, akTarget->GetPosition());
+
+	logger::info("Rotation: X is {}, Z is {}.", rotcustom.x, rotcustom.z);
+
+	auto eff = akSpell->GetCostliestEffectItem();
+
+	auto mgef = getAVEffectSetting(akSpell);
+
+	RE::Projectile::LaunchData ldata;
+
+	ldata.origin = NodePosition;
+	ldata.contactNormal = {0.0f, 0.0f, 0.0f};
+	ldata.projectileBase = mgef->data.projectileBase;
+	ldata.shooter = akSource;
+	ldata.combatController = akSource->GetActorRuntimeData().combatController;
+	ldata.weaponSource = nullptr;
+	ldata.ammoSource = nullptr;
+	ldata.angleZ = rotcustom.z;
+	ldata.angleX = rotcustom.x;
+	ldata.unk50 = nullptr;
+	ldata.desiredTarget = nullptr;
+	ldata.unk60 = 0.0f;
+	ldata.unk64 = 0.0f;
+	ldata.parentCell = akSource->GetParentCell();
+	ldata.spell = akSpell;
+	ldata.castingSource = RE::MagicSystem::CastingSource::kOther;
+	ldata.enchantItem = nullptr;
+	ldata.poison = nullptr;
+	ldata.area = eff->GetArea();
+	ldata.power = 1.0f;
+	ldata.scale = 1.0f;
+	ldata.alwaysHit = false;
+	ldata.noDamageOutsideCombat = false;
+	ldata.autoAim = false;
+	ldata.useOrigin = true;
+	ldata.deferInitialization = false;
+	ldata.forceConeOfFire = false;
+
+	RE::BSPointerHandle<RE::Projectile> handle;
+	RE::Projectile::Launch(&handle, ldata);
 }
-*/
+
+void CastSpellFromPointToPoint(RE::StaticFunctionTag*, RE::Actor* akSource, RE::SpellItem* akSpell, 
+							   float StartPoint_X, float StartPoint_Y, float StartPoint_Z, 
+							   float EndPoint_X, float EndPoint_Y, float EndPoint_Z) {
+
+	 RE::NiPoint3 NodePosition;
+
+	 NodePosition.x = StartPoint_X;
+	 NodePosition.y = StartPoint_Y;
+	 NodePosition.z = StartPoint_Z;
+
+	 logger::info("NodePosition: X = {}, Y = {}, Z = {}.", NodePosition.x, NodePosition.y, NodePosition.z);
+
+	 RE::NiPoint3 DestinationPosition;
+
+	 DestinationPosition.x = EndPoint_X;
+	 DestinationPosition.y = EndPoint_Y;
+	 DestinationPosition.z = EndPoint_Z;
+
+	 logger::info("DestinationPosition: X = {}, Y = {}, Z = {}.", DestinationPosition.x, DestinationPosition.y,
+				  DestinationPosition.z);
+
+	 auto rotcustom = rot_at_custom(NodePosition, DestinationPosition);
+
+	 auto eff = akSpell->GetCostliestEffectItem();
+
+	 auto mgef = getAVEffectSetting(akSpell);
+
+	 RE::Projectile::LaunchData ldata;
+
+	 ldata.origin = NodePosition;
+	 ldata.contactNormal = {0.0f, 0.0f, 0.0f};
+	 ldata.projectileBase = mgef->data.projectileBase;
+	 ldata.shooter = akSource;
+	 ldata.combatController = akSource->GetActorRuntimeData().combatController;
+	 ldata.weaponSource = nullptr;
+	 ldata.ammoSource = nullptr;
+	 ldata.angleZ = rotcustom.z;
+	 ldata.angleX = rotcustom.x;
+	 ldata.unk50 = nullptr;
+	 ldata.desiredTarget = nullptr;
+	 ldata.unk60 = 0.0f;
+	 ldata.unk64 = 0.0f;
+	 ldata.parentCell = akSource->GetParentCell();
+	 ldata.spell = akSpell;
+	 ldata.castingSource = RE::MagicSystem::CastingSource::kOther;
+	 ldata.enchantItem = nullptr;
+	 ldata.poison = nullptr;
+	 ldata.area = eff->GetArea();
+	 ldata.power = 1.0f;
+	 ldata.scale = 1.0f;
+	 ldata.alwaysHit = false;
+	 ldata.noDamageOutsideCombat = false;
+	 ldata.autoAim = false;
+	 ldata.useOrigin = true;
+	 ldata.deferInitialization = false;
+	 ldata.forceConeOfFire = false;
+
+	 RE::BSPointerHandle<RE::Projectile> handle;
+	 RE::Projectile::Launch(&handle, ldata);
+
+}
 
 inline void LaunchAmmo(RE::StaticFunctionTag*, RE::Actor* a_actor, RE::TESAmmo* a_ammo, RE::TESObjectWEAP* a_weapon,
-                        RE::BSFixedString a_nodeName, std::int32_t a_source, RE::TESObjectREFR* a_target,
-                        RE::AlchemyItem* a_poison, RE::BGSProjectile* ProjBase, RE::Actor* a_combattarget) {
+                        RE::BSFixedString a_nodeName, RE::TESObjectREFR* a_target, 
+                        RE::BGSProjectile* a_projbase) {
  
-//   ProjBase needs to be assigned through Papyrus. Using a_ammo->data.projectile gives an invalid value. As does getting it through launchData.
+//   a_projbase needs to be assigned through Papyrus. Using a_ammo->data.projectile gives an invalid value. As does getting it through launchData.
 
-     SKSE::GetTaskInterface()->AddTask([a_actor, a_ammo, a_weapon, a_nodeName, a_source, a_target, a_poison, ProjBase,
-                                       a_combattarget]() {
+     SKSE::GetTaskInterface()->AddTask([a_actor, a_ammo, a_weapon, a_nodeName, a_target, a_projbase]() {
+
          RE::NiAVObject* fireNode = nullptr;
          auto root = a_actor->GetCurrent3D();
-         switch (a_source) {
-             case -1: {
-                 if (!a_nodeName.empty()) {
-                     if (root) {
-                         fireNode = root->GetObjectByName(a_nodeName);
-                     }
-                 } else {
-                     if (const auto currentProcess = a_actor->GetActorRuntimeData().currentProcess) {
-                         const auto& biped = a_actor->GetBiped2();
-                         fireNode = a_weapon->IsCrossbow() ? currentProcess->GetMagicNode(biped)
-                                                           : currentProcess->GetWeaponNode(biped);
-                     } else {
-                         fireNode = a_weapon->GetFireNode(root);
-                     }
-                 }
-             } break;
-             case 0:
-                 fireNode = root ? root->GetObjectByName(RE::FixedStrings::GetSingleton()->npcLMagicNode) : nullptr;
-                 break;
-             case 1:
-                 fireNode = root ? root->GetObjectByName(RE::FixedStrings::GetSingleton()->npcRMagicNode) : nullptr;
-                 break;
-             case 2:
-                 fireNode = root ? root->GetObjectByName(RE::FixedStrings::GetSingleton()->npcHeadMagicNode) : nullptr;
-                 break;
-             default:
-                 break;
+		 if (!a_nodeName.empty()) {
+			 if (root) {
+				 fireNode = root->GetObjectByName(a_nodeName);
+			 }
+		 } else {
+			 if (root) {
+				 fireNode = root;
+			 }
          }
+
          RE::NiPoint3 origin;
          RE::Projectile::ProjectileRot angles{};
 
-//      First attempt -> works in 1st person, but aim is off in 3rd person and for NPCs.
-         if (fireNode) {
-             origin = fireNode->world.translate;
+        if (fireNode && a_target) {
+            origin = fireNode->world.translate;
 
-//           This line didsn't work in 3rd person or for NPCs... -> aim is completely off (shoots up to the sky).
-//           a_actor->Unk_A0(fireNode, angles.x, angles.z, origin);             
+            RE::NiPoint3 targetcoords;
+			
+            RE::Actor* a_targetactor = skyrim_cast<RE::Actor*>(a_target);
 
-             angles.x = a_actor->GetAimAngle();
-             angles.z = a_actor->GetAimHeading();
-         } else {
-             origin = a_actor->GetPosition();
-             origin.z += 96.0f;
+            if (a_actor->IsPlayerRef()) {
+                targetcoords = a_target->GetPosition();
+            } else {
+                if (a_targetactor) {
+                    targetcoords = a_target->GetPosition();
+                    float heightincrease = a_target->GetHeight()*0.6;
+                    targetcoords.z += heightincrease;               
+                
+                } else {
+                    targetcoords = a_target->GetPosition();
+                }
+            }
 
-             angles.x = a_actor->GetAimAngle();
-             angles.z = a_actor->GetAimHeading();
-         }
+            float dx = targetcoords.x - origin.x;
+            float dy = targetcoords.y - origin.y;
+            float dz = targetcoords.z - origin.z;
 
-//      Second attempt -> didn't work: 1st person was fine, 3rd person and NPCs were completely off. (worse than 1st attempt)
-/* auto camera = RE::PlayerCamera::GetSingleton();
+            float horizontalDist = (dx*dx + dy*dy);
 
-         if (a_actor->IsPlayerRef()) {
-                      
-             if (camera->IsInFirstPerson()) {
+			float angleX = std::atan2(dz, std::sqrt(horizontalDist));
+			float angleZ = std::atan2(dx, dy);
 
-                 if (fireNode) {
-                     origin = fireNode->world.translate;
-     //             a_actor->Unk_A0(fireNode, angles.x, angles.z, origin);
+			angles.x = -angleX;
+			angles.z = angleZ;			
 
-                     angles.x = a_actor->GetAimAngle();
-                     angles.z = a_actor->GetAimHeading();
-                 } else {
-                     origin = a_actor->GetPosition();
-                     origin.z += 96.0f;
-
-                     angles.x = a_actor->GetAimAngle();
-                     angles.z = a_actor->GetAimHeading();
-                 }
-
-             } else {
-
-                 if (fireNode) {
-                    origin = fireNode->world.translate;
-
-                    RE::NiPoint3 forward = fireNode->world.rotate * RE::NiPoint3{0, 1, 0};    // Y-axis is forward
-                    angles.x = std::asin(forward.z);                                        // pitch
-                    angles.z = std::atan2(forward.y, forward.x);                              // yaw
-                 }
-             }
-             
-         } else {
-         // For NPCs
-             if (fireNode) {
-                 origin = fireNode->world.translate;
-                 RE::NiPoint3 direction;
-                 
-                 if (a_combattarget) {
-                    RE::NiPoint3 targetPos = a_combattarget->GetPosition();
-                    RE::NiPoint3 delta = targetPos - origin;
-                    direction = delta / delta.Length();  // normalize
-
-                    angles.x = std::asin(direction.z);              // pitch
-                    angles.z = std::atan2(direction.y, direction.x);  // yaw
-                 } else {
-                    // fallback: fire straight ahead from actor rotation
-                    float actorAngleZ = a_actor->data.angle.z;
-                    angles.x = 0.0f;
-                    angles.z = actorAngleZ;
-                 }
-
-             } else {
-                 origin = a_actor->GetPosition();
-                 origin.z += 96.0f;
-
-                 angles.x = a_actor->GetAimAngle();
-                 angles.z = a_actor->GetAimHeading();
-             }  
-
-         }
+/*
+            logger::info("origin: x={}, y={}, z={}", origin.x, origin.y, origin.z);
+            logger::info("targetcoords: x={}, y={}, z={}", targetcoords.x, targetcoords.y, targetcoords.z);
+            logger::info("horizontalDist={}", horizontalDist);
+            logger::info("dx={}", dx);
+            logger::info("dy={}", dy);
+            logger::info("dz={}", dz);
+            logger::info("angleX={}", angles.x);
+            logger::info("angleZ={}", angles.z);
 */
 
-//       3rd attempt -> didn't work: 1st person, 3rd person and NPCs were completely off. (worse than 1st and 2nd attempt)
-//       auto params = GetLaunchOriginAndAngles(a_actor, fireNode, a_combattarget);
+        } else {
+            origin = a_actor->GetPosition();
+            origin.z += 96.0f;
 
-        if (fireNode) {
-             logger::info("FireNode found: {}", fireNode->name.c_str());
-             logger::info("Origin: x={}, y={}, z={}", origin.x, origin.y, origin.z);
-             logger::info("Angles: pitch(x)={}, yaw(z)={}", angles.x, angles.z);
-         } else {
-             logger::info("FireNode is null; using actor position: x={}, y={}, z={}", origin.x, origin.y, origin.z);
-             logger::info("Aim angles: pitch(x)={}, yaw(z)={}", angles.x, angles.z);
-         }
+            angles.x = a_actor->GetAimAngle();
+            angles.z = a_actor->GetAimHeading();
+        }
 
          RE::ProjectileHandle handle{};
          RE::Projectile::LaunchData launchData(a_actor, origin, angles, a_ammo, a_weapon);
-
-         if (a_target) { 
-             launchData.desiredTarget = a_target; 
-         }
-         if (a_poison) {
-             launchData.poison = a_poison;        
-         }
-         
-//       launchData.enchantItem = a_weapon->formEnchanting;
+        
          launchData.autoAim = false;
-         launchData.projectileBase = ProjBase;
-
-//      3rd attempt -> see above!
- //        launchData.angleX = params.pitch;
- //        launchData.angleZ = params.yaw;
+         launchData.projectileBase = a_projbase;
 
          RE::Projectile::Launch(&handle, launchData);
-     });
+
+   });
+}
+
+inline void LaunchSpellProjectile(RE::StaticFunctionTag*, RE::Actor* a_actor, RE::SpellItem* a_spell, RE::BSFixedString a_nodeName, 
+                                  RE::TESObjectREFR* a_target, RE::BGSProjectile* a_projbase) {
+ 
+    SKSE::GetTaskInterface()->AddTask([a_actor, a_spell, a_nodeName, a_target, a_projbase]() {  
+        
+         RE::NiAVObject* fireNode = nullptr;
+         auto root = a_actor->GetCurrent3D();
+		 if (!a_nodeName.empty()) {
+			 if (root) {
+				 fireNode = root->GetObjectByName(a_nodeName);
+			 }
+		 } else {
+			 if (root) {
+				 fireNode = root;
+			 }
+         }
+    
+        RE::NiPoint3 origin;
+        RE::Projectile::ProjectileRot angles{};
+
+        if (fireNode && a_target) {
+            origin = fireNode->world.translate;
+            RE::NiPoint3 targetcoords;
+			
+            RE::Actor* a_targetactor = skyrim_cast<RE::Actor*>(a_target);
+
+            if (a_actor->IsPlayerRef()) {
+                targetcoords = a_target->GetPosition();
+            } else {
+                if (a_targetactor) {
+                    targetcoords = a_target->GetPosition();
+                    float heightincrease = a_target->GetHeight()*0.6;
+                    targetcoords.z += heightincrease;               
+                
+                } else {
+                    targetcoords = a_target->GetPosition();
+                }
+            }
+
+            float dx = targetcoords.x - origin.x;
+            float dy = targetcoords.y - origin.y;
+            float dz = targetcoords.z - origin.z;
+
+            float horizontalDist = (dx*dx + dy*dy);
+
+			float angleX = std::atan2(dz, std::sqrt(horizontalDist));
+			float angleZ = std::atan2(dx, dy);
+
+			angles.x = -angleX;
+			angles.z = angleZ;			
+
+/*
+            logger::info("origin: x={}, y={}, z={}", origin.x, origin.y, origin.z);
+            logger::info("targetcoords: x={}, y={}, z={}", targetcoords.x, targetcoords.y, targetcoords.z);
+            logger::info("horizontalDist={}", horizontalDist);
+            logger::info("dx={}", dx);
+            logger::info("dy={}", dy);
+            logger::info("dz={}", dz);
+            logger::info("angleX={}", angles.x);
+            logger::info("angleZ={}", angles.z);
+*/
+        } else {
+            origin = a_actor->GetPosition();
+            origin.z += 96.0f;
+
+            angles.x = a_actor->GetAimAngle();
+            angles.z = a_actor->GetAimHeading();
+        }
+
+        RE::ProjectileHandle handle{};
+        RE::Projectile::LaunchData launchData(a_actor, origin, angles, a_spell); 
+		 
+        launchData.autoAim = false;
+        launchData.projectileBase = a_projbase;
+
+        RE::Projectile::Launch(&handle, launchData);
+    });
 }
 
 bool PapyrusFunctions(RE::BSScript::IVirtualMachine* vm) {
@@ -344,18 +442,21 @@ bool PapyrusFunctions(RE::BSScript::IVirtualMachine* vm) {
     vm->RegisterFunction("GetEffectiveScrollCost", "ANDR_PapyrusFunctions", GetEffectiveScrollCost);
     vm->RegisterFunction("GetActiveMagicEffectFromActor", "ANDR_PapyrusFunctions", GetActiveMagicEffectFromActor);
     vm->RegisterFunction("SetRefAsNoAIAcquire", "ANDR_PapyrusFunctions", SetRefAsNoAIAcquire);
-    vm->RegisterFunction("LaunchAmmo", "ANDR_PapyrusFunctions", LaunchAmmo);    
-/*  depreciated functions
     vm->RegisterFunction("CastSpellFromRef", "ANDR_PapyrusFunctions", CastSpellFromRef);
     vm->RegisterFunction("CastSpellFromPointToPoint", "ANDR_PapyrusFunctions", CastSpellFromPointToPoint);
+    vm->RegisterFunction("LaunchAmmo", "ANDR_PapyrusFunctions", LaunchAmmo); 
+    vm->RegisterFunction("LaunchSpellProjectile", "ANDR_PapyrusFunctions", LaunchSpellProjectile); 
+    
+    /*  depreciated functions
     vm->RegisterFunction("CastSpellFromHand", "ANDR_PapyrusFunctions", CastSpellFromHand);
+    vm->RegisterFunction("MoveRefToCrosshairLocation", "ANDR_PapyrusFunctions", MoveRefToCrosshairLocation);
 */
     return true;
 }
 
 SKSEPluginLoad(const SKSE::LoadInterface* skse) {
     SKSE::Init(skse);
-    SetupLog();
+//    SetupLog();
     SKSE::GetPapyrusInterface()->Register(PapyrusFunctions);
     return true;
 }
@@ -363,169 +464,6 @@ SKSEPluginLoad(const SKSE::LoadInterface* skse) {
 /* 
     Old depreciated code -> kept as backup and reference.
     
-    Instructions from Fenix to get the position and rotation for CastSpellFromHand() function.
-    
-    struct ProjectileRot {
-        float x, z;
-    };
-
-    typedef uint32_t (*cast_t)(RE::Actor* caster, RE::SpellItem* spel, const RE::NiPoint3& start_pos,
-                               const ProjectileRot& rot);
-    typedef uint32_t (*cast_CustomPos_t)(RE::Actor* caster, RE::SpellItem* spel, const RE::NiPoint3& start_pos,
-                                         const ProjectileRot& rot);
-
-    RE::EffectSetting* getAVEffectSetting(RE::MagicItem* mgitem) {
-        using func_t = decltype(getAVEffectSetting);
-        REL::Relocation<func_t> func{REL::RelocationID(11194, 11302)};
-        return func(mgitem);
-    }
-
-    float SkyrimSE_c51f70(RE::NiPoint3* dir) {
-        using func_t = decltype(SkyrimSE_c51f70);
-        REL::Relocation<func_t> func{REL::RelocationID(68820, 70172)};
-        return func(dir);
-    }
-
-    auto rot_at(RE::NiPoint3 dir) {
-        ProjectileRot rot;
-        auto len = dir.Unitize();
-        if (len == 0) {
-            rot = {0, 0};
-        } else {
-            float polar_angle = SkyrimSE_c51f70(&dir);
-            rot = {-asin(dir.z), polar_angle};
-        }
-        return rot;
-    }
-
-    auto rot_at(const RE::NiPoint3& from, const RE::NiPoint3& to) { return rot_at(to - from); }
-
-    // Papyrus: Function CastSpellFromHand(Actor akSource, Spell akSpell, ObjectReference akTarget, ObjectReference
-    akOriginRef) global native
-    // Cast a spell from the hand defined in PositionInt at the akTarget.
-    void CastSpellFromRef(RE::StaticFunctionTag*, RE::Actor* akSource, RE::SpellItem* akSpell, RE::TESObjectREFR*
-    akTarget, RE::TESObjectREFR* akOriginRef) {
-
-    //    auto NodePosition = akSource
-    //                            ->GetMagicCaster(PositionInt == 0 ? RE::MagicSystem::CastingSource::kLeftHand
-    //                                                              : RE::MagicSystem::CastingSource::kRightHand)
-    //                            ->GetMagicNode()
-    //                            ->world.translate;
-        auto NodePosition = akOriginRef->GetPosition();
-
-        logger::info("Position: X is {}, Y is {}, Z is {}.", NodePosition.x, NodePosition.y, NodePosition.z);
-
-        auto rot = rot_at(NodePosition, akTarget->GetPosition());
-
-        logger::info("Rotation: X is {}, Z is {}.", rot.x, rot.z);
-
-        auto eff = akSpell->GetCostliestEffectItem();
-
-        auto mgef = getAVEffectSetting(akSpell);
-
-        RE::Projectile::LaunchData ldata;
-
-        ldata.origin = NodePosition;
-        ldata.contactNormal = {0.0f, 0.0f, 0.0f};
-        ldata.projectileBase = mgef->data.projectileBase;
-        ldata.shooter = akSource;
-        ldata.combatController = akSource->GetActorRuntimeData().combatController;
-        ldata.weaponSource = nullptr;
-        ldata.ammoSource = nullptr;
-        ldata.angleZ = rot.z;
-        ldata.angleX = rot.x;
-        ldata.unk50 = nullptr;
-        ldata.desiredTarget = nullptr;
-        ldata.unk60 = 0.0f;
-        ldata.unk64 = 0.0f;
-        ldata.parentCell = akSource->GetParentCell();
-        ldata.spell = akSpell;
-        ldata.castingSource = RE::MagicSystem::CastingSource::kOther;
-    //    ldata.unk7C = 0;
-        ldata.enchantItem = nullptr;
-        ldata.poison = nullptr;
-        ldata.area = eff->GetArea();
-        ldata.power = 1.0f;
-        ldata.scale = 1.0f;
-        ldata.alwaysHit = false;
-        ldata.noDamageOutsideCombat = false;
-        ldata.autoAim = false;
-    //    ldata.unk9F = false;
-        ldata.useOrigin = true;
-        ldata.deferInitialization = false;
-        ldata.forceConeOfFire = false;
-
-        RE::BSPointerHandle<RE::Projectile> handle;
-        RE::Projectile::Launch(&handle, ldata);
-    }
-
-    // Function CastSpellFromPointToPoint(Actor akSource, Spell akSpell, Float StartPoint_X, Float StartPoint_Y,
-    //                                   Float StartPoint_Z, Float EndPoint_X, Float EndPoint_Y,
-    //                                   Float EndPoint_Z) native global {
-
-    void CastSpellFromPointToPoint(RE::StaticFunctionTag*, RE::Actor* akSource, RE::SpellItem* akSpell, float
-    StartPoint_X, float StartPoint_Y, float StartPoint_Z, float EndPoint_X, float EndPoint_Y, float EndPoint_Z) {
-
-         RE::NiPoint3 NodePosition;
-
-         NodePosition.x = StartPoint_X;
-         NodePosition.y = StartPoint_Y;
-         NodePosition.z = StartPoint_Z;
-
-         logger::info("NodePosition: X = {}, Y = {}, Z = {}.", NodePosition.x, NodePosition.y, NodePosition.z);
-
-         RE::NiPoint3 DestinationPosition;
-
-         DestinationPosition.x = EndPoint_X;
-         DestinationPosition.y = EndPoint_Y;
-         DestinationPosition.z = EndPoint_Z;
-
-         logger::info("DestinationPosition: X = {}, Y = {}, Z = {}.", DestinationPosition.x, DestinationPosition.y,
-                      DestinationPosition.z);
-
-         auto rot = rot_at(NodePosition, DestinationPosition);
-
-         auto eff = akSpell->GetCostliestEffectItem();
-
-         auto mgef = getAVEffectSetting(akSpell);
-
-         RE::Projectile::LaunchData ldata;
-
-         ldata.origin = NodePosition;
-         ldata.contactNormal = {0.0f, 0.0f, 0.0f};
-         ldata.projectileBase = mgef->data.projectileBase;
-         ldata.shooter = akSource;
-         ldata.combatController = akSource->GetActorRuntimeData().combatController;
-         ldata.weaponSource = nullptr;
-         ldata.ammoSource = nullptr;
-         ldata.angleZ = rot.z;
-         ldata.angleX = rot.x;
-         ldata.unk50 = nullptr;
-         ldata.desiredTarget = nullptr;
-         ldata.unk60 = 0.0f;
-         ldata.unk64 = 0.0f;
-         ldata.parentCell = akSource->GetParentCell();
-         ldata.spell = akSpell;
-         ldata.castingSource = RE::MagicSystem::CastingSource::kOther;
-    //     ldata.unk7C = 0;
-         ldata.enchantItem = nullptr;
-         ldata.poison = nullptr;
-         ldata.area = eff->GetArea();
-         ldata.power = 1.0f;
-         ldata.scale = 1.0f;
-         ldata.alwaysHit = false;
-         ldata.noDamageOutsideCombat = false;
-         ldata.autoAim = false;
-    //     ldata.unk9F = false;
-         ldata.useOrigin = true;
-         ldata.deferInitialization = false;
-         ldata.forceConeOfFire = false;
-
-         RE::BSPointerHandle<RE::Projectile> handle;
-         RE::Projectile::Launch(&handle, ldata);
-
-    }
-
 
     // Math for this function seems to be different than through papyrus, as such it's done as a non-native function,
     that calls CastSpellFromPointToPoint() for now.
@@ -648,3 +586,56 @@ SKSEPluginLoad(const SKSE::LoadInterface* skse) {
 
     RE::Projectile::LaunchData::~LaunchData() {}
  */
+
+/*
+void MoveObjectWithOffset(RE::TESObjectREFR* ObjectToMove, RE::TESObjectREFR* TargetObject, const RE::NiPoint3& localOffset)
+{
+// NOT a papyrus function -> just needed for MoveRefToCrosshairLocation()
+
+    if (ObjectToMove && TargetObject) {
+
+        const RE::NiPoint3& TargetObjectPos = TargetObject->GetPosition();
+        float angleZ = TargetObject->GetAngleZ();  // yaw angle (radians)
+
+        float cosYaw = std::cos(angleZ);
+        float sinYaw = std::sin(angleZ);
+
+        RE::NiPoint3 worldOffset;
+        worldOffset.x = localOffset.x * cosYaw - localOffset.y * sinYaw;
+        worldOffset.y = localOffset.x * sinYaw + localOffset.y * cosYaw;
+        worldOffset.z = localOffset.z;
+
+        RE::NiPoint3 newWorldPos = TargetObjectPos + worldOffset;
+
+        ObjectToMove->SetPosition(newWorldPos);
+    }
+}
+
+void MoveRefToCrosshairLocation(RE::StaticFunctionTag*, RE::TESObjectREFR* a_originactor,
+                                RE::TESObjectREFR* a_targetref, float DistanceVar, float HeightVar) {
+
+	a_targetref->MoveTo(a_originactor);
+    RE::NiPoint3 origincoords = a_originactor->GetPosition();
+
+	float GameX = a_originactor->GetAngleX();
+	float GameZ = a_originactor->GetAngleZ();
+    float AngleX = (90 + GameX);
+    float AngleZ;
+
+    if (GameZ < 90) { 
+        AngleZ = (90 - GameZ);
+    } else {
+        AngleZ = (450 - GameZ);
+	}
+	
+    RE::NiPoint3 TargetPosition;
+
+	TargetPosition.x = (origincoords.x + (DistanceVar * sin(AngleX) * cos(AngleZ)));
+    TargetPosition.y = (origincoords.y + (DistanceVar * sin(AngleX) * sin(AngleZ)));
+    TargetPosition.z = (origincoords.z + (DistanceVar * cos(AngleX) + HeightVar));
+
+    auto* player = RE::PlayerCharacter::GetSingleton();
+    MoveObjectWithOffset(a_targetref, player, TargetPosition);
+
+}	
+*/

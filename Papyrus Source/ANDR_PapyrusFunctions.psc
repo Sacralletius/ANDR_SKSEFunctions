@@ -91,29 +91,31 @@ Function CastSpellFromPointToPoint(Actor akSource, Spell akSpell, Float StartPoi
 - EndPoint_Z: The Z position of the ending point.
 }
 
-
-Function LaunchAmmo(Actor akCaster, Ammo akAmmo, Weapon akWeapon, String NodeSource = "", Int iSlot = -1, ObjectReference akTarget = None, Potion akPoison = None, Projectile akProjectile, Actor akCombatTarget = None) Global Native
+Function LaunchAmmo(Actor akCaster, Ammo akAmmo, Weapon akWeapon, String sNodeName = "", ObjectReference akTarget = None, Projectile akProjectile) Global Native
 {
 ; based off of fenix31415's and po3's launcharrow function
 - akCaster: the actor "casting" the ammo.
+- akAmmo: the ammo being used
 - akWeapon: the weapon that's being used.
 - NodeSource: the name of the skeleton bone node of the akCaster, the ammo is launch from.
-- iSlot:
-	-1 	Uses NodeSource or default weapon node if empty
-	0 	Left hand node
-	1 	Right hand node
-	2 	Head node
-	; iSlot might be buggy though, best practice is to use an actual node source
-- akTarget: the target of the ammo.	(not sure if this is needed.)
-- akPoison: the poison being applied. (might be buggy)
+- akTarget: the target of the ammo. (might cause issues if none)
 - akProjectile: the base projectile.
-- akCombatTarget: the combat target for NPCs.	
+}
+
+Function LaunchSpellProjectile(Actor akCaster, Spell akSpell, String sNodeName = "", ObjectReference akTarget = None, Projectile akProjectile) Global Native
+{
+- akCaster: the caster.
+- akSpell: the spell to cast.
+- sNodeName: the name of the skeleton bone node of the akCaster, the ammo is launch from.
+- akTarget: the target the spell is aimed at, for the player.  (might cause issues if none)
+- akProjectile: the projectile that's being used.
 }
 
 ; ============================= NON-NATIVE FUNCTIONS =============================
 
 Function CastSpellFromHand(Actor akSource, Spell akSpell, Bool IsLeftHand, Float DistanceVar = 2000.0, Float HeightVar = 100.0, Float Offset_NoSneak_Left_X = 30.0, Float Offset_NoSneak_Left_Y = 30.0, Float Offset_NoSneak_Left_Z = 110.0, Float Offset_NoSneak_Right_X = 30.0, Float Offset_NoSneak_Right_Y = -30.0, Float Offset_NoSneak_Right_Z = 110.0, Float Offset_Sneak_Left_X = 30.0, Float Offset_Sneak_Left_Y = 30.0, Float Offset_Sneak_Left_Z = 70.0, Float Offset_Sneak_Right_X = 30.0, Float Offset_Sneak_Right_Y = -30.0, Float Offset_Sneak_Right_Z = 70.0)	global
 	{
+	; Dislaimer: This can be replaced with LaunchSpellProjectile(), but I'm keeping this function for reference and dependencies.
 	- akSource: The caster.
 	- akSpell: The spell to cast.
 	- IsLeftHand: True if cast from the left hand, false if cast from the right hand.
@@ -278,8 +280,19 @@ Function SetActorLevel(actor akActor, Int iLevel)
 EndFuntion
 /;
 
+;/
+Function MoveRefToCrosshairLocation(ObjectReference akOriginRef, ObjectReference akTargetRef, float DistanceVar = 2000.0, float HeightVar = 130.0) Global Native
+{
+Move akTargetRef in front of the origin ref, simulating the crosshair location.
+- akOriginRef: the origin ref to start calculating from. (Most often the player, but works for NPCs as well, in which case akTargetRef will be placed in front of them.)
+- akTargetRef: the ref to move to the crosshair location.
+- DistanceVar: the distance. (most often 2000 units)
+- HeightVar: the rough height of akOriginRef (usually between 64 and 96 units)
+Source: https://old.reddit.com/r/skyrimmods/comments/k8nvb3/some_calculus_that_can_help_modders_with_moveto/
+}
+/;
 
-; wish list...
+; ============================= Wish list =============================
 
 ;/
 InfoTopic Function GetCurrentDialogueTopic()  global native
