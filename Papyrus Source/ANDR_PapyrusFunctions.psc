@@ -91,25 +91,37 @@ Function CastSpellFromPointToPoint(Actor akSource, Spell akSpell, Float StartPoi
 - EndPoint_Z: The Z position of the ending point.
 }
 
-Function LaunchAmmo(Actor akCaster, Ammo akAmmo, Weapon akWeapon, String sNodeName = "", ObjectReference akTarget = None, Projectile akProjectile) Global Native
+Function LaunchAmmo(Actor akCaster, Ammo akAmmo, Weapon akWeapon, String sNodeName = "", ObjectReference akTarget = None, Projectile akProjectile, ObjectReference OriginSecondRef = None) Global Native
 {
 ; based off of fenix31415's and po3's launcharrow function
 - akCaster: the actor "casting" the ammo.
 - akAmmo: the ammo being used
 - akWeapon: the weapon that's being used.
-- NodeSource: the name of the skeleton bone node of the akCaster, the ammo is launch from.
+- NodeSource: the name of the skeleton bone node of the akCaster, the ammo is launched from. If empty, it will be cast from the origin point of akCaster or OriginSecondRef (only if filled.)
 - akTarget: the target of the ammo. (might cause issues if none)
 - akProjectile: the base projectile.
+- OriginSecondRef: an optional second ref to launch the ammo from (as proxy). If not None, NodeSource will be taken from this ref, instead of akCaster.
 }
 
-Function LaunchSpellProjectile(Actor akCaster, Spell akSpell, String sNodeName = "", ObjectReference akTarget = None, Projectile akProjectile) Global Native
+Function LaunchMagicSpell(Actor akCaster, Spell akSpell, String sNodeName = "", ObjectReference akTarget = None, Projectile akProjectile, ObjectReference OriginSecondRef = None) Global Native
 {
 - akCaster: the caster.
 - akSpell: the spell to cast.
-- sNodeName: the name of the skeleton bone node of the akCaster, the ammo is launch from.
+- sNodeName: the name of the skeleton bone node of the akCaster, the spell is launched from. If empty, it will be cast from the origin point of akCaster or OriginSecondRef (only if filled.)
 - akTarget: the target the spell is aimed at, for the player.  (might cause issues if none)
 - akProjectile: the projectile that's being used.
+- OriginSecondRef: an optional second ref to launch the spell from (as proxy). If not None, NodeSource will be taken from this ref, instead of akCaster.
 }
+
+
+;/
+Function AttachProjectileToNode(Actor akActor, String attachNodeName, Projectile a_projbase) Global Native
+{
+- akCaster: the relevant actor
+- attachNodeName: the string of the node to connect the projectile to.
+- a_projbase: the projectile
+}
+/;
 
 ; ============================= NON-NATIVE FUNCTIONS =============================
 

@@ -269,14 +269,22 @@ void CastSpellFromPointToPoint(RE::StaticFunctionTag*, RE::Actor* akSource, RE::
 
 inline void LaunchAmmo(RE::StaticFunctionTag*, RE::Actor* a_actor, RE::TESAmmo* a_ammo, RE::TESObjectWEAP* a_weapon,
                         RE::BSFixedString a_nodeName, RE::TESObjectREFR* a_target, 
-                        RE::BGSProjectile* a_projbase) {
+                        RE::BGSProjectile* a_projbase, RE::TESObjectREFR* a_secondOrigin) {
  
 //   a_projbase needs to be assigned through Papyrus. Using a_ammo->data.projectile gives an invalid value. As does getting it through launchData.
 
-     SKSE::GetTaskInterface()->AddTask([a_actor, a_ammo, a_weapon, a_nodeName, a_target, a_projbase]() {
+     SKSE::GetTaskInterface()->AddTask([a_actor, a_ammo, a_weapon, a_nodeName, a_target, a_projbase, a_secondOrigin]() {
+
+
+         RE::NiAVObject* root = nullptr;
+         if (a_secondOrigin) {
+            root = a_secondOrigin->GetCurrent3D();
+         } else {
+            root = a_actor->GetCurrent3D();
+         }
 
          RE::NiAVObject* fireNode = nullptr;
-         auto root = a_actor->GetCurrent3D();
+         
 		 if (!a_nodeName.empty()) {
 			 if (root) {
 				 fireNode = root->GetObjectByName(a_nodeName);
@@ -352,13 +360,20 @@ inline void LaunchAmmo(RE::StaticFunctionTag*, RE::Actor* a_actor, RE::TESAmmo* 
    });
 }
 
-inline void LaunchSpellProjectile(RE::StaticFunctionTag*, RE::Actor* a_actor, RE::SpellItem* a_spell, RE::BSFixedString a_nodeName, 
-                                  RE::TESObjectREFR* a_target, RE::BGSProjectile* a_projbase) {
+inline void LaunchMagicSpell(RE::StaticFunctionTag*, RE::Actor* a_actor, RE::SpellItem* a_spell, RE::BSFixedString a_nodeName, 
+                                  RE::TESObjectREFR* a_target, RE::BGSProjectile* a_projbase, RE::TESObjectREFR* a_secondOrigin) {
  
-    SKSE::GetTaskInterface()->AddTask([a_actor, a_spell, a_nodeName, a_target, a_projbase]() {  
+    SKSE::GetTaskInterface()->AddTask([a_actor, a_spell, a_nodeName, a_target, a_projbase, a_secondOrigin]() {  
         
+         RE::NiAVObject* root = nullptr;
+         if (a_secondOrigin) {
+            root = a_secondOrigin->GetCurrent3D();
+         } else {
+            root = a_actor->GetCurrent3D();
+         }
+
          RE::NiAVObject* fireNode = nullptr;
-         auto root = a_actor->GetCurrent3D();
+
 		 if (!a_nodeName.empty()) {
 			 if (root) {
 				 fireNode = root->GetObjectByName(a_nodeName);
@@ -445,8 +460,8 @@ bool PapyrusFunctions(RE::BSScript::IVirtualMachine* vm) {
     vm->RegisterFunction("CastSpellFromRef", "ANDR_PapyrusFunctions", CastSpellFromRef);
     vm->RegisterFunction("CastSpellFromPointToPoint", "ANDR_PapyrusFunctions", CastSpellFromPointToPoint);
     vm->RegisterFunction("LaunchAmmo", "ANDR_PapyrusFunctions", LaunchAmmo); 
-    vm->RegisterFunction("LaunchSpellProjectile", "ANDR_PapyrusFunctions", LaunchSpellProjectile); 
-    
+    vm->RegisterFunction("LaunchMagicSpell", "ANDR_PapyrusFunctions", LaunchMagicSpell); 
+
     /*  depreciated functions
     vm->RegisterFunction("CastSpellFromHand", "ANDR_PapyrusFunctions", CastSpellFromHand);
     vm->RegisterFunction("MoveRefToCrosshairLocation", "ANDR_PapyrusFunctions", MoveRefToCrosshairLocation);
