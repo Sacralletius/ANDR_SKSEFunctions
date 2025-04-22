@@ -4,9 +4,9 @@ Import Math
 
 ; ============================= NATIVE FUNCTIONS =============================
 
-Int Function GetAndrealphusExtenderVersion() Global Native
+String Function GetAndrealphusExtenderVersion() Global Native
 {
-- Return value: an integer string that's the version number of this mod. (without the dots, so for instance 1.4.1 -> 141)
+- Return value: a string that's the version number of this mod.
 }
 
 Function CastEnchantment(Actor akSource, Enchantment akEnchantment, Actor akTarget) global native

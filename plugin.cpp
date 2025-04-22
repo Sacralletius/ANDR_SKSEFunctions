@@ -3,8 +3,9 @@
 #include "RE/N/NiPoint3.h"
 
 
-namespace logger = SKSE::log;
+//namespace logger = SKSE::log;
 
+/*
 void SetupLog() {
     auto logsFolder = SKSE::log::log_directory();
     if (!logsFolder) SKSE::stl::report_and_fail("SKSE log_directory not provided, logs disabled.");
@@ -16,14 +17,14 @@ void SetupLog() {
     spdlog::set_level(spdlog::level::trace);
     spdlog::flush_on(spdlog::level::trace);
 }
-
+*/
 
 ///// Actual new functions /////
 
-// Papyrus: Int Function GetAndrealphusExtenderVersion() Global Native
+// Papyrus: String Function GetAndrealphusExtenderVersion() Global Native
 // Returns the version number of the mod.
-int GetAndrealphusExtenderVersion(RE::StaticFunctionTag*) { 
-    return 150; 
+RE::BSFixedString GetAndrealphusExtenderVersion(RE::StaticFunctionTag*) { 
+    return "1.5.2"; 
 }
 
 // Papyrus: Function CastEnchantment(Actor akSource, Enchantment akEnchantment, Actor akTarget)
@@ -80,14 +81,14 @@ RE::ActiveEffect* GetActiveMagicEffectFromActor(RE::StaticFunctionTag*, RE::Acto
                                                 RE::EffectSetting* akMagicEffect) {
     
     if (akMagicEffect == nullptr) {
-        logger::info("akMagicEffect is none.");
+//        logger::info("akMagicEffect is none.");
         return nullptr;
     }
 
     auto EffectsList = akActor->AsMagicTarget()->GetActiveEffectList();
 
     if (!EffectsList) {
-        logger::info("Effects List is none.");
+//        logger::info("Effects List is none.");
         return nullptr;
     }
 
@@ -101,10 +102,10 @@ RE::ActiveEffect* GetActiveMagicEffectFromActor(RE::StaticFunctionTag*, RE::Acto
                 return effect;
             }
         } else {
-            logger::info("The setting is nullptr");
+//            logger::info("The setting is nullptr");
         }
     }
-    logger::info("Effect is none.");
+//    logger::info("Effect is none.");
     return nullptr;
 }
 
@@ -161,11 +162,11 @@ void CastSpellFromRef(RE::StaticFunctionTag*, RE::Actor* akSource, RE::SpellItem
 
 	auto NodePosition = akOriginRef->GetPosition();
 
-	logger::info("Position: X is {}, Y is {}, Z is {}.", NodePosition.x, NodePosition.y, NodePosition.z);
+//	logger::info("Position: X is {}, Y is {}, Z is {}.", NodePosition.x, NodePosition.y, NodePosition.z);
 
 	auto rotcustom = rot_at_custom(NodePosition, akTarget->GetPosition());
 
-	logger::info("Rotation: X is {}, Z is {}.", rotcustom.x, rotcustom.z);
+//	logger::info("Rotation: X is {}, Z is {}.", rotcustom.x, rotcustom.z);
 
 	auto eff = akSpell->GetCostliestEffectItem();
 
@@ -215,7 +216,7 @@ void CastSpellFromPointToPoint(RE::StaticFunctionTag*, RE::Actor* akSource, RE::
 	 NodePosition.y = StartPoint_Y;
 	 NodePosition.z = StartPoint_Z;
 
-	 logger::info("NodePosition: X = {}, Y = {}, Z = {}.", NodePosition.x, NodePosition.y, NodePosition.z);
+//	 logger::info("NodePosition: X = {}, Y = {}, Z = {}.", NodePosition.x, NodePosition.y, NodePosition.z);
 
 	 RE::NiPoint3 DestinationPosition;
 
@@ -223,8 +224,8 @@ void CastSpellFromPointToPoint(RE::StaticFunctionTag*, RE::Actor* akSource, RE::
 	 DestinationPosition.y = EndPoint_Y;
 	 DestinationPosition.z = EndPoint_Z;
 
-	 logger::info("DestinationPosition: X = {}, Y = {}, Z = {}.", DestinationPosition.x, DestinationPosition.y,
-				  DestinationPosition.z);
+//	 logger::info("DestinationPosition: X = {}, Y = {}, Z = {}.", DestinationPosition.x, DestinationPosition.y,
+//				  DestinationPosition.z);
 
 	 auto rotcustom = rot_at_custom(NodePosition, DestinationPosition);
 
