@@ -2,10 +2,20 @@
 #include <warning.h>
 #include "RE/N/NiPoint3.h"
 
+#include "RE/A/Actor.h"
+#include "RE/A/Array.h"
+#include "RE/O/Object.h"
+#include "RE/V/VirtualMachine.h"
+#include "RE/M/MagicItem.h"
 
-//namespace logger = SKSE::log;
+#include "RE/T/TESSpellList.h"
+
+#include "RE/B/BGSPerk.h"
+#include "RE/B/BGSPerkRankArray.h"
 
 /*
+namespace logger = SKSE::log;
+
 void SetupLog() {
     auto logsFolder = SKSE::log::log_directory();
     if (!logsFolder) SKSE::stl::report_and_fail("SKSE log_directory not provided, logs disabled.");
@@ -447,6 +457,71 @@ inline void LaunchMagicSpell(RE::StaticFunctionTag*, RE::Actor* a_actor, RE::Spe
     });
 }
 
+bool PlaceObjectAtCrosshairLoc(RE::StaticFunctionTag*, RE::Actor* originRef, RE::TESObjectREFR* markerRef, float fDistance, float fHeight, bool UseLeftRightOffsets, bool isLeft) {
+    if (!originRef || !markerRef)
+        return false;
+
+    float gameX = RE::rad_to_deg(originRef->GetAngleX());  // pitch
+    float gameZ = RE::rad_to_deg(originRef->GetAngleZ());  // yaw
+
+    float angleX = RE::deg_to_rad(90.0f + gameX);
+    float angleZ = 0.0f;
+
+    if (gameZ < 90.0f)
+        angleZ = RE::deg_to_rad(90.0f - gameZ);
+    else
+        angleZ = RE::deg_to_rad(450.0f - gameZ);
+
+    float extraX = 0.0f;
+    float extraY = 0.0f;
+    float extraZ = 0.0f;
+
+    auto camera = RE::PlayerCamera::GetSingleton();
+    bool isFirstPerson = camera && camera->IsInFirstPerson();
+
+    if (isFirstPerson) {
+        extraZ = 10.0f;
+        if (UseLeftRightOffsets) {
+            extraX = isLeft ? -10.0f : 10.0f;
+        }
+    } else {
+        extraZ = 40.0f;
+        if (UseLeftRightOffsets) {
+            extraX = isLeft ? -15.0f : 15.0f;
+        }
+    }
+
+	float ArgumentMathSinX = sin(angleX);
+	float ArgumentMathCosZ = cos(angleZ);
+	float ArgumentMathSinZ = sin(angleZ);
+	float ArgumentMathCosX = cos(angleX);
+
+	float offsetX = fDistance * ArgumentMathSinX * ArgumentMathCosZ + extraX;
+	float offsetY = fDistance * ArgumentMathSinX * ArgumentMathSinZ + extraY;
+	float offsetZ = fDistance * ArgumentMathCosX + fHeight + extraZ;
+
+    RE::NiPoint3 originPos = originRef->GetPosition();
+    RE::NiPoint3 finalPos = {
+        originPos.x + offsetX,
+        originPos.y + offsetY,
+        originPos.z + offsetZ
+    };
+
+/*  logger::info("GameX = {}, GameZ = {}, AngleX = {}, AngleZ = {}", gameX, gameZ, angleX, angleZ);
+
+    logger::info("TotalOffsetX: fDistance = {}, ArgumentMathSinX = {}, ArgumentMathCosZ = {}, ExtraOffsetX = {}", fDistance, ArgumentMathSinX, ArgumentMathCosZ, extraX);
+	logger::info("TotalOffsetY: fDistance = {}, ArgumentMathSinX = {}, ArgumentMathSinZ = {}, ExtraOffsetY = {}", fDistance, ArgumentMathSinX, ArgumentMathSinZ, extraY);
+	logger::info("TotalOffsetZ: fDistance = {}, ArgumentMathCosX = {}, fHeight = {}, ExtraOffsetZ = {}", fDistance, ArgumentMathCosX, fHeight, extraZ);
+
+    logger::info("finalPos: x = {}, y = {}, z = {}", finalPos.x, finalPos.y, finalPos.z);
+*/
+
+    markerRef->MoveTo(originRef);
+    markerRef->SetPosition(finalPos);
+
+    return true;
+}
+
 bool PapyrusFunctions(RE::BSScript::IVirtualMachine* vm) {
     vm->RegisterFunction("GetAndrealphusExtenderVersion", "ANDR_PapyrusFunctions", GetAndrealphusExtenderVersion);
     vm->RegisterFunction("CastEnchantment", "ANDR_PapyrusFunctions", CastEnchantment);
@@ -462,10 +537,15 @@ bool PapyrusFunctions(RE::BSScript::IVirtualMachine* vm) {
     vm->RegisterFunction("CastSpellFromPointToPoint", "ANDR_PapyrusFunctions", CastSpellFromPointToPoint);
     vm->RegisterFunction("LaunchAmmo", "ANDR_PapyrusFunctions", LaunchAmmo); 
     vm->RegisterFunction("LaunchMagicSpell", "ANDR_PapyrusFunctions", LaunchMagicSpell); 
+    vm->RegisterFunction("PlaceObjectAtCrosshairLoc", "ANDR_PapyrusFunctions", PlaceObjectAtCrosshairLoc); 
 
-    /*  depreciated functions
+/*  depreciated functions
     vm->RegisterFunction("CastSpellFromHand", "ANDR_PapyrusFunctions", CastSpellFromHand);
     vm->RegisterFunction("MoveRefToCrosshairLocation", "ANDR_PapyrusFunctions", MoveRefToCrosshairLocation);
+    vm->RegisterFunction("AddSpellsToActor", "ANDR_PapyrusFunctions", AddSpellsToActor); 
+    vm->RegisterFunction("AddPerksToActor", "ANDR_PapyrusFunctions", AddPerksToActor);
+    vm->RegisterFunction("DumpActorSpellsToFormList", "ANDR_PapyrusFunctions", DumpActorSpellsToFormList); 
+    vm->RegisterFunction("DumpActorPerksToFormList", "ANDR_PapyrusFunctions", DumpActorPerksToFormList); 
 */
     return true;
 }
@@ -601,9 +681,8 @@ SKSEPluginLoad(const SKSE::LoadInterface* skse) {
     no longer be needed in the future? ---> This is a dtor.
 
     RE::Projectile::LaunchData::~LaunchData() {}
- */
 
-/*
+
 void MoveObjectWithOffset(RE::TESObjectREFR* ObjectToMove, RE::TESObjectREFR* TargetObject, const RE::NiPoint3& localOffset)
 {
 // NOT a papyrus function -> just needed for MoveRefToCrosshairLocation()
@@ -654,4 +733,143 @@ void MoveRefToCrosshairLocation(RE::StaticFunctionTag*, RE::TESObjectREFR* a_ori
     MoveObjectWithOffset(a_targetref, player, TargetPosition);
 
 }	
+
+
+void EndDialogue(RE::StaticFunctionTag*, RE::Actor* a_actor) {
+    a_actor->EndDialogue();
+}
+
+RE::BGSDialogueBranch* GetCurrentDialogueBranch(RE::StaticFunctionTag*, RE::Actor* a_actor) {
+    return a_actor->GetExclusiveBranch();
+}
+
+
+void AddSpellsToActor(RE::StaticFunctionTag*, RE::Actor* actorRef, RE::BSScript::VMArray<RE::SpellItem*> spells)
+{
+    if (!actorRef || !spells)
+        return;
+
+    for (uint32_t i = 0; i < spells->size(); ++i) {
+        const auto& var = (*spells)[i];
+        RE::BSScript::Object* obj = var.GetObject().get();
+
+        if (obj && obj->IsValid()) {
+            RE::TESForm* form = reinterpret_cast<RE::TESForm*>(obj);
+            if (form) {
+                auto* spell = form->As<RE::SpellItem>();
+                if (spell) {
+                    actorRef->AddSpell(spell);
+                }
+            }
+        }
+    }
+}
+
+void AddPerksToActor(RE::StaticFunctionTag*, RE::Actor* actorRef, RE::BSScript::Array* perks) {
+    if (!actorRef || !perks)
+        return;
+
+    for (uint32_t i = 0; i < perks->size(); ++i) {
+        const auto& var = (*perks)[i];
+        RE::BSScript::Object* obj = var.GetObject().get();
+
+        if (obj && obj->IsValid()) {
+            RE::TESForm* form = reinterpret_cast<RE::TESForm*>(obj);
+            if (form) {
+                auto* perk = form->As<RE::BGSPerk>();
+                if (perk) {
+                    actorRef->AddPerk(perk);
+                }
+            }
+        }
+    }
+}
+
+void AddShoutsToActor(RE::StaticFunctionTag*, RE::Actor* actorRef, RE::BSScript::Array* shouts) {
+    if (!actorRef || !shouts)
+        return;
+
+    for (uint32_t i = 0; i < shouts->size(); ++i) {
+        const auto& var = (*shouts)[i];
+        RE::BSScript::Object* obj = var.GetObject().get();
+
+        if (obj && obj->IsValid()) {
+            RE::TESForm* form = reinterpret_cast<RE::TESForm*>(obj);
+            if (form) {
+                auto* shout = form->As<RE::TESShout>();
+                if (shout) {
+                    actorRef->AddShout(shout);
+                }
+            }
+        }
+    }
+}
+
+
+void AddSpellsToActor(RE::StaticFunctionTag*, RE::Actor* actorRef, RE::BGSListForm* spellList)
+{
+    for (auto* form : spellList->forms) {
+        if (auto* spell = form->As<RE::SpellItem>()) {
+            actorRef->AddSpell(spell);
+        }
+    }
+}
+
+void AddPerksToActor(RE::StaticFunctionTag*, RE::Actor* actorRef, RE::BGSListForm* perkList)
+{
+    for (auto* form : perkList->forms) {
+        if (auto* perk = form->As<RE::BGSPerk>()) {
+            actorRef->AddPerk(perk);
+        }
+    }
+}
+
+void DumpActorSpellsToFormList(RE::StaticFunctionTag*, RE::Actor* actor, RE::BGSListForm* outList)
+{
+    if (!actor || !outList)
+        return;
+
+    outList->forms.clear();
+
+    // From actor base (racial/class spells)
+    if (auto* base = actor->GetActorBase()) {
+        if (auto* npc = base->As<RE::TESNPC>()) {
+            if (auto* spellData = npc->GetSpellList()) {
+                for (std::uint32_t i = 0; i < spellData->numSpells; ++i) {
+                    if (auto* spell = spellData->spells[i]; spell && !outList->HasForm(spell)) {
+                        outList->forms.push_back(spell);
+                    }
+                }
+            }
+        }
+    }
+
+    // From runtime (learned/given spells)
+    for (auto* spell : actor->GetActorRuntimeData().addedSpells) {
+        if (spell && !outList->HasForm(spell)) {
+            outList->forms.push_back(spell);
+        }
+    }
+}
+
+void DumpActorPerksToFormList(RE::StaticFunctionTag*, RE::Actor* actor, RE::BGSListForm* outList)
+{
+    if (!actor || !outList)
+        return;
+
+    outList->forms.clear();
+
+    if (auto* base = actor->GetActorBase()) {
+        auto* perkArray = static_cast<RE::BGSPerkRankArray*>(base);
+        auto* perks = perkArray->perks;
+        auto  count = perkArray->perkCount;
+
+        for (std::uint32_t i = 0; i < count; ++i) {
+            auto& entry = perks[i];
+            if (entry.perk && !outList->HasForm(entry.perk)) {
+                outList->forms.push_back(entry.perk);
+            }
+        }
+    }
+}
 */

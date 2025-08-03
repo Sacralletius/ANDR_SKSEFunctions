@@ -79,7 +79,7 @@ Function CastSpellFromRef(Actor akSource, Spell akSpell, ObjectReference akTarge
 - akOriginRef: The ObjectReference where to cast the spell from.
 }
 
-Function CastSpellFromPointToPoint(Actor akSource, Spell akSpell, Float StartPoint_X, Float StartPoint_Y, Float StartPoint_Z, Float EndPoint_X, Float EndPoint_Y, Float EndPoint_Z) native global
+Function CastSpellFromPointToPoint(Actor akSource, Spell akSpell, Float StartPoint_X, Float StartPoint_Y, Float StartPoint_Z, Float EndPoint_X, Float EndPoint_Y, Float EndPoint_Z) global native
 {
 - akSource: The caster.
 - akSpell: The spell to cast.
@@ -91,7 +91,7 @@ Function CastSpellFromPointToPoint(Actor akSource, Spell akSpell, Float StartPoi
 - EndPoint_Z: The Z position of the ending point.
 }
 
-Function LaunchAmmo(Actor akCaster, Ammo akAmmo, Weapon akWeapon, String sNodeName = "", ObjectReference akTarget = None, Projectile akProjectile, ObjectReference OriginSecondRef = None) Global Native
+Function LaunchAmmo(Actor akCaster, Ammo akAmmo, Weapon akWeapon, String sNodeName = "", ObjectReference akTarget = None, Projectile akProjectile, ObjectReference OriginSecondRef = None) global native
 {
 ; based off of fenix31415's and po3's launcharrow function
 - akCaster: the actor "casting" the ammo.
@@ -113,15 +113,15 @@ Function LaunchMagicSpell(Actor akCaster, Spell akSpell, String sNodeName = "", 
 - OriginSecondRef: an optional second ref to launch the spell from (as proxy). If not None, NodeSource will be taken from this ref, instead of akCaster.
 }
 
-
-;/
-Function AttachProjectileToNode(Actor akActor, String attachNodeName, Projectile a_projbase) Global Native
-{
-- akCaster: the relevant actor
-- attachNodeName: the string of the node to connect the projectile to.
-- a_projbase: the projectile
+Bool Function PlaceObjectAtCrosshairLoc(Actor akActor, ObjectReference markerRef, float fDistance, float fHeight, bool UseLeftRightOffsets, bool isLeft) global native
+{ 
+- akActor: The actor, should be the player. 
+- markerRef: the marker to place.
+- fDistance: the distance to place the marker at.
+- fHeight: the height offset, from the base of the actor.
+- UseLeftRightOffsets: whether you want to use the offsets for left and right hands.
+- isLeft: whether you want to apply the offset value for left hand or not. Will need UseLeftRightOffsets to be true.
 }
-/;
 
 ; ============================= NON-NATIVE FUNCTIONS =============================
 
@@ -146,55 +146,55 @@ Function CastSpellFromHand(Actor akSource, Spell akSpell, Bool IsLeftHand, Float
 	- Offset_Sneak_Right_Y: Optional, Y Offset for right hand when the actor is sneaking. Default value is -30.0.
 	- Offset_Sneak_Right_Z: Optional, Z Offset for right hand when the actor is sneaking. Default value is 70.0.
 	}
-		; ======= Example of use =======
-		; CastSpellFromHand(YsoldaRef, IceSpike, true)
-		; 
-		; Have Ysolda cast an Ice Spike spell from her left hand.
-		; ==============================
 	
-		Float GameX = akSource.GetAngleX()
-		Float GameZ = akSource.GetAngleZ()
-		Float AngleX = 90 + GameX  
-		Float AngleZ
+	; ======= Example of use =======
+	; CastSpellFromHand(YsoldaRef, IceSpike, true)
+	; 
+	; Have Ysolda cast an Ice Spike spell from her left hand.
+	; ==============================
+
+	Float GameX = akSource.GetAngleX()
+	Float GameZ = akSource.GetAngleZ()
+	Float AngleX = 90 + GameX  
+	Float AngleZ
+
+	Float SourceMarkerXOffset_Standard
+	Float SourceMarkerYOffset_Standard
+	Float SourceMarkerZOffset_Standard
+
+	If GameZ < 90 
+		AngleZ = 90 - GameZ
+	Else
+		AngleZ = 450 - GameZ
+	EndIf
 	
-		Float SourceMarkerXOffset_Standard
-		Float SourceMarkerYOffset_Standard
-		Float SourceMarkerZOffset_Standard
-	
-		If GameZ < 90 
-			AngleZ = 90 - GameZ
+	If !akSource.IsSneaking()
+		If 	IsLeftHand
+			SourceMarkerXOffset_Standard = Offset_NoSneak_Left_X
+			SourceMarkerYOffset_Standard = Offset_NoSneak_Left_Y
+			SourceMarkerZOffset_Standard = Offset_NoSneak_Left_Z
 		Else
-			AngleZ = 450 - GameZ
+			SourceMarkerXOffset_Standard = Offset_NoSneak_Right_X
+			SourceMarkerYOffset_Standard = Offset_NoSneak_Right_Y
+			SourceMarkerZOffset_Standard = Offset_NoSneak_Right_Z
 		EndIf
+	Else
+		If 	IsLeftHand
+			SourceMarkerXOffset_Standard = Offset_Sneak_Left_X
+			SourceMarkerYOffset_Standard = Offset_Sneak_Left_Y
+			SourceMarkerZOffset_Standard = Offset_Sneak_Left_Z
+		Else
+			SourceMarkerXOffset_Standard = Offset_Sneak_Right_X
+			SourceMarkerYOffset_Standard = Offset_Sneak_Right_Y
+			SourceMarkerZOffset_Standard = Offset_Sneak_Right_Z
+		EndIf
+	EndIf
 		
-		If !akSource.IsSneaking()
-			If 	IsLeftHand
-				SourceMarkerXOffset_Standard = Offset_NoSneak_Left_X
-				SourceMarkerYOffset_Standard = Offset_NoSneak_Left_Y
-				SourceMarkerZOffset_Standard = Offset_NoSneak_Left_Z
-			Else
-				SourceMarkerXOffset_Standard = Offset_NoSneak_Right_X
-				SourceMarkerYOffset_Standard = Offset_NoSneak_Right_Y
-				SourceMarkerZOffset_Standard = Offset_NoSneak_Right_Z
-			EndIf
-		Else
-			If 	IsLeftHand
-				SourceMarkerXOffset_Standard = Offset_Sneak_Left_X
-				SourceMarkerYOffset_Standard = Offset_Sneak_Left_Y
-				SourceMarkerZOffset_Standard = Offset_Sneak_Left_Z
-			Else
-				SourceMarkerXOffset_Standard = Offset_Sneak_Right_X
-				SourceMarkerYOffset_Standard = Offset_Sneak_Right_Y
-				SourceMarkerZOffset_Standard = Offset_Sneak_Right_Z
-			EndIf
-		EndIf
-			
-		Float SourcePosX = akSource.GetPositionX()
-		Float SourcePosY = akSource.GetPositionY()
-		Float SourcePosZ = akSource.GetPositionZ()
+	Float SourcePosX = akSource.GetPositionX()
+	Float SourcePosY = akSource.GetPositionY()
+	Float SourcePosZ = akSource.GetPositionZ()
 
-		CastSpellFromPointToPoint(akSource, akSpell, (SourcePosX + (cos(AngleZ)*SourceMarkerXOffset_Standard - sin(AngleZ)*SourceMarkerYOffset_Standard)), (SourcePosY + (cos(AngleZ)*SourceMarkerYOffset_Standard + sin(AngleZ)*SourceMarkerXOffset_Standard)), (SourcePosZ + SourceMarkerZOffset_Standard), (SourcePosX + (DistanceVar * Math.Sin(AngleX) * Math.Cos(AngleZ))), (SourcePosY + (DistanceVar * Math.Sin(AngleX) * Math.Sin(AngleZ))), (SourcePosZ + (DistanceVar * Math.Cos(AngleX) + HeightVar)))
-
+	CastSpellFromPointToPoint(akSource, akSpell, (SourcePosX + (cos(AngleZ)*SourceMarkerXOffset_Standard - sin(AngleZ)*SourceMarkerYOffset_Standard)), (SourcePosY + (cos(AngleZ)*SourceMarkerYOffset_Standard + sin(AngleZ)*SourceMarkerXOffset_Standard)), (SourcePosZ + SourceMarkerZOffset_Standard), (SourcePosX + (DistanceVar * Math.Sin(AngleX) * Math.Cos(AngleZ))), (SourcePosY + (DistanceVar * Math.Sin(AngleX) * Math.Sin(AngleZ))), (SourcePosZ + (DistanceVar * Math.Cos(AngleX) + HeightVar)))
 EndFunction
 
 Function CastSpellFromRefAimed(Actor akSource, Spell akSpell, ObjectReference akOriginRef) global
@@ -304,6 +304,47 @@ Source: https://old.reddit.com/r/skyrimmods/comments/k8nvb3/some_calculus_that_c
 }
 /;
 
+;/
+Function AddSpellsToActor(Actor akActor, FormList SpellList) global native
+{ 
+- akActor: The actor
+- SpellList: The formlist of spells to add to the actor.
+}
+
+Function AddPerksToActor(Actor akActor, FormList PerkList) global native
+{ 
+- akActor: The actor
+- PerkList: The formlist of perks to add to the actor.
+}
+
+
+Function AddShoutsToActor(Actor akActor, FormList ShoutList) global native
+{ 
+- akActor: The actor
+- ShoutList: The formlist of shouts to add to the actor.
+}
+
+
+Function DumpActorSpellsToFormList(Actor akActor, FormList SpellList) global native
+{ 
+- akActor: The actor
+- SpellList: The formlist to add spells to.
+}
+
+Function DumpActorPerksToFormList(Actor akActor, FormList PerkList) global native
+{ 
+- akActor: The actor
+- PerkList: The formlist to add perks to.
+}
+
+
+Function DumpActorShoutsToFormList(Actor akActor, FormList ShoutList) global native
+{ 
+- akActor: The actor
+- ShoutList: The formlist to add shouts to.
+}
+/;
+
 ; ============================= Wish list =============================
 
 ;/
@@ -405,4 +446,20 @@ Actor[] Function GetCommandedActors(Actor akActor)
 Function SetCommandingActor(Actor CommandedActor, Actor CommandingActor = None)
 ; sets makes actors commanded and commanding of each other.
 ; if CommandingActor is None, clears the commanded actor from being commanded.
+/;
+
+; ===== Unused or deprecated functions =======
+
+;/
+Function AttachProjectileToNode(Actor akActor, String attachNodeName, Projectile a_projbase) Global Native
+{
+- akCaster: the relevant actor
+- attachNodeName: the string of the node to connect the projectile to.
+- a_projbase: the projectile
+}
+
+Function EndDialogue(Actor akActor) Global Native
+{
+- akActor: the actor that we want to end their dialogue.
+}
 /;
