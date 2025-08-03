@@ -113,14 +113,14 @@ Function LaunchMagicSpell(Actor akCaster, Spell akSpell, String sNodeName = "", 
 - OriginSecondRef: an optional second ref to launch the spell from (as proxy). If not None, NodeSource will be taken from this ref, instead of akCaster.
 }
 
-Bool Function PlaceObjectAtCrosshairLoc(Actor akActor, ObjectReference markerRef, float fDistance, float fHeight, bool UseLeftRightOffsets, bool isLeft) global native
+Function MoveRefToCrosshairLoc(Actor akActor, ObjectReference markerRef, float fDistance, float fHeight, bool UseLeftRightOffsets = false, bool isLeft = false) global native
 { 
-- akActor: The actor, should be the player. 
-- markerRef: the marker to place.
-- fDistance: the distance to place the marker at.
-- fHeight: the height offset, from the base of the actor.
-- UseLeftRightOffsets: whether you want to use the offsets for left and right hands.
-- isLeft: whether you want to apply the offset value for left hand or not. Will need UseLeftRightOffsets to be true.
+- akActor: The actor. This should be the player in almost all cases. (Any other actor might crash, so be careful!)
+- markerRef: the ref to move.
+- fDistance: the distance to place the marker at in units. (Values between 2000.0-4000.0 are recommended.)
+- fHeight: the height offset, from the base of the actor, in units. (Values between 90.0-100.0 are recommended.)
+- UseLeftRightOffsets: whether you want to use the offsets for left and right hands. (leave false if you're unsure.)
+- isLeft: whether you want to apply the offset value for left hand or not. Will need UseLeftRightOffsets to be true. (ignore if you're unsure.)
 }
 
 ; ============================= NON-NATIVE FUNCTIONS =============================

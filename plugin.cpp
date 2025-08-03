@@ -34,7 +34,7 @@ void SetupLog() {
 // Papyrus: String Function GetAndrealphusExtenderVersion() Global Native
 // Returns the version number of the mod.
 RE::BSFixedString GetAndrealphusExtenderVersion(RE::StaticFunctionTag*) { 
-    return "1.5.2"; 
+    return "1.6.1."; 
 }
 
 // Papyrus: Function CastEnchantment(Actor akSource, Enchantment akEnchantment, Actor akTarget)
@@ -457,9 +457,7 @@ inline void LaunchMagicSpell(RE::StaticFunctionTag*, RE::Actor* a_actor, RE::Spe
     });
 }
 
-bool PlaceObjectAtCrosshairLoc(RE::StaticFunctionTag*, RE::Actor* originRef, RE::TESObjectREFR* markerRef, float fDistance, float fHeight, bool UseLeftRightOffsets, bool isLeft) {
-    if (!originRef || !markerRef)
-        return false;
+void MoveRefToCrosshairLoc(RE::StaticFunctionTag*, RE::Actor* originRef, RE::TESObjectREFR* markerRef, float fDistance, float fHeight, bool UseLeftRightOffsets, bool isLeft) {
 
     float gameX = RE::rad_to_deg(originRef->GetAngleX());  // pitch
     float gameZ = RE::rad_to_deg(originRef->GetAngleZ());  // yaw
@@ -519,7 +517,6 @@ bool PlaceObjectAtCrosshairLoc(RE::StaticFunctionTag*, RE::Actor* originRef, RE:
     markerRef->MoveTo(originRef);
     markerRef->SetPosition(finalPos);
 
-    return true;
 }
 
 bool PapyrusFunctions(RE::BSScript::IVirtualMachine* vm) {
@@ -537,7 +534,7 @@ bool PapyrusFunctions(RE::BSScript::IVirtualMachine* vm) {
     vm->RegisterFunction("CastSpellFromPointToPoint", "ANDR_PapyrusFunctions", CastSpellFromPointToPoint);
     vm->RegisterFunction("LaunchAmmo", "ANDR_PapyrusFunctions", LaunchAmmo); 
     vm->RegisterFunction("LaunchMagicSpell", "ANDR_PapyrusFunctions", LaunchMagicSpell); 
-    vm->RegisterFunction("PlaceObjectAtCrosshairLoc", "ANDR_PapyrusFunctions", PlaceObjectAtCrosshairLoc); 
+    vm->RegisterFunction("MoveRefToCrosshairLoc", "ANDR_PapyrusFunctions", MoveRefToCrosshairLoc); 
 
 /*  depreciated functions
     vm->RegisterFunction("CastSpellFromHand", "ANDR_PapyrusFunctions", CastSpellFromHand);
