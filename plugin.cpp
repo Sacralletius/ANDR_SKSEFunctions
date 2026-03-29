@@ -47,7 +47,7 @@ void SetupLog() {
 
 // Papyrus: String Function GetAndrealphusExtenderVersion() Global Native
 // Returns the version number of the mod.
-RE::BSFixedString GetAndrealphusExtenderVersion(RE::StaticFunctionTag*) { return "1.7"; }
+RE::BSFixedString GetAndrealphusExtenderVersion(RE::StaticFunctionTag*) { return "1.7.1"; }
 
 ///// Added by Ivy /////
 
@@ -799,8 +799,18 @@ void MoveRefToCrosshairLoc(RE::StaticFunctionTag*, RE::Actor* originRef, RE::TES
 }
 
 int MakeDiceRoll(RE::StaticFunctionTag*, int iNumberOfDice, int iNumberOfSides, int iModifier) {
+
+    // Guard against invalid inputs
+    if (iNumberOfDice <= 0 || iNumberOfSides < 1) 
+        return iModifier;
+
+/*
     static std::random_device rd;
     static std::mt19937 gen(rd());
+*/
+
+    // Thread safety "static std::mt19937 is not thread-safe"
+    thread_local std::mt19937 gen(std::random_device{}());
 
     std::uniform_int_distribution<> dist(1, iNumberOfSides);
 
