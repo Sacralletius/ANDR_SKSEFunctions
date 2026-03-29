@@ -123,6 +123,36 @@ Function MoveRefToCrosshairLoc(Actor akActor, ObjectReference markerRef, float f
 - isLeft: whether you want to apply the offset value for left hand or not. Will need UseLeftRightOffsets to be true. (ignore if you're unsure.)
 }
 
+Int Function MakeDiceRoll(int iNumberOfDice, int iNumberOfSides, int iModifier = 0)  global native
+{
+Rolls a certain number of dies, with a modifier. For instance, MakeDiceRoll(3, 6) rolls 3d6.
+- iNumberOfDice: the number of dices.
+- iNumberOfSides: the number of sides on the die.
+- iModifier: the modifier to add to the final result. (optionally)
+- Returns: the result of the dice roll.
+}
+
+; =================================== SKSE Functions by Ivy =====================================
+
+Int Function GetCurrentBookPage() global native
+{
+Returns the current page of the book as an int
+}
+
+String Function GetBookText(Book akBook) global native
+{
+- akBook: The book to get the body text from.
+Returns the body text of a book as a string
+}
+
+Book Function GetOpenedBook() global native
+{Returns the currently opened book in the book menu. If not in book menu, returns None.}
+
+;/
+Event OnBookFullyRead()
+{Event that gets triggered after being on the last page of a book for 10 seconds, aka "fully read".}
+:/
+
 ; ============================= NON-NATIVE FUNCTIONS =============================
 
 Function CastSpellFromHand(Actor akSource, Spell akSpell, Bool IsLeftHand, Float DistanceVar = 2000.0, Float HeightVar = 100.0, Float Offset_NoSneak_Left_X = 30.0, Float Offset_NoSneak_Left_Y = 30.0, Float Offset_NoSneak_Left_Z = 110.0, Float Offset_NoSneak_Right_X = 30.0, Float Offset_NoSneak_Right_Y = -30.0, Float Offset_NoSneak_Right_Z = 110.0, Float Offset_Sneak_Left_X = 30.0, Float Offset_Sneak_Left_Y = 30.0, Float Offset_Sneak_Left_Z = 70.0, Float Offset_Sneak_Right_X = 30.0, Float Offset_Sneak_Right_Y = -30.0, Float Offset_Sneak_Right_Z = 70.0)	global
