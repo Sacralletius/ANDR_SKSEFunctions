@@ -27,7 +27,7 @@
 
 // Papyrus: String Function GetAndrealphusExtenderVersion() Global Native
 // Returns the version number of the mod.
-RE::BSFixedString GetAndrealphusExtenderVersion(RE::StaticFunctionTag*) { return "1.9.0"; }
+RE::BSFixedString GetAndrealphusExtenderVersion(RE::StaticFunctionTag*) { return "1.10.1"; }
 
 ///// Added by Ivy /////
 
