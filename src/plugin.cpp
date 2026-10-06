@@ -349,6 +349,20 @@ static void ForgetCommandedActor(RE::Actor* a_commander, RE::ActorHandle a_comma
     }
 }
 
+#ifdef GetObject
+#    undef GetObject
+#endif
+
+static RE::SpellItem* GetCommandedActorAbility() {
+    auto defaults = RE::BGSDefaultObjectManager::GetSingleton();
+
+    if (!defaults) {
+        return nullptr;
+    }
+
+    return defaults->GetObject<RE::SpellItem>(RE::DEFAULT_OBJECTS::kCommandedActorAbility);
+}
+
 // Papyrus: Bool Function ApplyCommandEffect(Actor akCaster, Actor akTarget) Global Native
 // Makes akTarget a commanded actor of akCaster. Unlike vanilla, works on living, non-summoned actors
 // and for non-player casters. Any previous commander is released first.
@@ -396,6 +410,12 @@ bool ApplyCommandEffect(RE::StaticFunctionTag*, RE::Actor* akCaster, RE::Actor* 
     targetData->commandingActor = casterHandle;
     akTarget->GetActorRuntimeData().boolFlags.set(RE::Actor::BOOL_FLAGS::kIsCommandedActor);
 
+    if (auto ability = GetCommandedActorAbility()) {
+        if (!akTarget->HasSpell(ability)) {
+            akTarget->AddSpell(ability);
+        }
+    }
+	
     akTarget->StopCombat();
     akTarget->EvaluatePackage();
 
@@ -424,6 +444,10 @@ void EndCommandEffect(RE::StaticFunctionTag*, RE::Actor* akCaster, RE::Actor* ak
     targetData->commandingActor = RE::ActorHandle{};
     akTarget->GetActorRuntimeData().boolFlags.reset(RE::Actor::BOOL_FLAGS::kIsCommandedActor);
 
+    if (auto ability = GetCommandedActorAbility()) {
+        akTarget->RemoveSpell(ability);
+    }
+	
     akTarget->EvaluatePackage();
 }
 
@@ -1037,6 +1061,20 @@ int GetFactionCrimeGoldValue(RE::StaticFunctionTag*, RE::TESFaction* CrimeFactio
     }
 }
 
+RE::TESObjectREFR* GetOpenedContainerRef(RE::StaticFunctionTag*) {
+    auto handle = RE::ContainerMenu::GetTargetRefHandle();
+
+    if (handle) {
+        auto container = RE::TESObjectREFR::LookupByHandle(handle);
+
+        if (container) {
+            return container.get();
+        }
+    }
+
+    return nullptr;
+}
+
 bool PapyrusFunctions(RE::BSScript::IVirtualMachine* vm) {
     vm->RegisterFunction("GetAndrealphusExtenderVersion", "ANDR_PapyrusFunctions", GetAndrealphusExtenderVersion);
     vm->RegisterFunction("CastEnchantment", "ANDR_PapyrusFunctions", CastEnchantment);
@@ -1055,6 +1093,7 @@ bool PapyrusFunctions(RE::BSScript::IVirtualMachine* vm) {
     vm->RegisterFunction("MoveRefToCrosshairLoc", "ANDR_PapyrusFunctions", MoveRefToCrosshairLoc);
     vm->RegisterFunction("MakeDiceRoll", "ANDR_PapyrusFunctions", MakeDiceRoll);
     vm->RegisterFunction("GetFactionCrimeGoldValue", "ANDR_PapyrusFunctions", GetFactionCrimeGoldValue);
+    vm->RegisterFunction("GetOpenedContainerRef", "ANDR_PapyrusFunctions", GetOpenedContainerRef);
 
     /*Added by Ivy*/
     vm->RegisterFunction("GetCurrentBookPage", "ANDR_PapyrusFunctions", GetCurrentBookPage);

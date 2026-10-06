@@ -145,6 +145,12 @@ Int Function GetFactionCrimeGoldValue(Faction CrimeFaction, int iCrimeType) glob
 Returns: the amount of the bounty you'll get for commiting the specified crime.
 }
 
+ObjectReference Function GetOpenedContainerRef() global native
+{
+Returns: the objectreference of the container you have opened, whilst in the container menu. When not in the container menu, returns None.
+}
+
+
 ; =================================== SKSE Functions by Ivy =====================================
 
 Int Function GetCurrentBookPage() global native
