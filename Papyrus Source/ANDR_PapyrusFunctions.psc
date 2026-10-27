@@ -150,6 +150,60 @@ ObjectReference Function GetOpenedContainerRef() global native
 Returns: the objectreference of the container you have opened, whilst in the container menu. When not in the container menu, returns None.
 }
 
+Int Function GetCollisionLayerFromRef(ObjectReference akRef) global native
+{
+- akRef: the ref to check.
+Returns: the integer of the collision layer of akRef
+List of collision layers integers:
+-1 = Invalid
+0 = kUnidentified
+1 = kStatic
+2 = kAnimStatic
+3 = kTransparent
+4 = kClutter
+5 = kWeapon
+6 = kProjectile
+7 = kSpell
+8 = kBiped
+9 = kTrees
+10 = kProps
+11 = kWater
+12 = kTrigger
+13 = kTerrain
+14 = kTrap
+15 = kNonCollidable
+16 = kCloudTrap
+17 = kGround
+18 = kPortal
+19 = kDebrisSmall
+20 = kDebrisLarge
+21 = kAcousticSpace
+22 = kActorZone
+23 = kProjectileZone
+24 = kGasTrap
+25 = kShellCasting
+26 = kTransparentWall
+27 = kInvisibleWall
+28 = kTransparentSmallAnim
+29 = kClutterLarge
+30 = kCharController
+31 = kStairHelper
+32 = kDeadBip
+33 = kBipedNoCC
+34 = kAvoidBox
+35 = kCollisionBox
+36 = kCameraSphere
+37 = kDoorDetection
+38 = kConeProjectile
+39 = kCamera
+40 = kItemPicker
+41 = kLOS
+42 = kPathingPick
+43 = kUnused0
+44 = kUnused1
+45 = kSpellExplosion
+46 = kDroppingPick
+}
 
 ; =================================== SKSE Functions by Ivy =====================================
 

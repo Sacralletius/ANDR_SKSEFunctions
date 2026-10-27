@@ -27,7 +27,7 @@
 
 // Papyrus: String Function GetAndrealphusExtenderVersion() Global Native
 // Returns the version number of the mod.
-RE::BSFixedString GetAndrealphusExtenderVersion(RE::StaticFunctionTag*) { return "1.10.1"; }
+RE::BSFixedString GetAndrealphusExtenderVersion(RE::StaticFunctionTag*) { return "1.11"; }
 
 ///// Added by Ivy /////
 
@@ -1075,6 +1075,29 @@ RE::TESObjectREFR* GetOpenedContainerRef(RE::StaticFunctionTag*) {
     return nullptr;
 }
 
+int GetCollisionLayerFromRef(RE::StaticFunctionTag*, RE::TESObjectREFR* akRef) {
+    if (!akRef) {
+        return -1;
+    }
+
+    RE::NiAVObject* root = akRef->Get3D2();
+
+    if (!root) {
+        return -1;
+    }
+
+    RE::COL_LAYER collayer = root->GetCollisionLayer();
+
+    // why doesn't this work? -> collayer isn't a pointer. GetCollisionLayer() returns an actual enum value, so there's no nullptr/invalid-object state to check in the same sense as root.
+    /* if (!collayer) {
+        return -1;       
+    }
+    */
+
+    // How to convert collayer to int? -> RE::COL_LAYER is an enum class, so we can convert it explicitly with static_cast
+    return static_cast<int>(collayer);
+}
+
 bool PapyrusFunctions(RE::BSScript::IVirtualMachine* vm) {
     vm->RegisterFunction("GetAndrealphusExtenderVersion", "ANDR_PapyrusFunctions", GetAndrealphusExtenderVersion);
     vm->RegisterFunction("CastEnchantment", "ANDR_PapyrusFunctions", CastEnchantment);
@@ -1094,6 +1117,7 @@ bool PapyrusFunctions(RE::BSScript::IVirtualMachine* vm) {
     vm->RegisterFunction("MakeDiceRoll", "ANDR_PapyrusFunctions", MakeDiceRoll);
     vm->RegisterFunction("GetFactionCrimeGoldValue", "ANDR_PapyrusFunctions", GetFactionCrimeGoldValue);
     vm->RegisterFunction("GetOpenedContainerRef", "ANDR_PapyrusFunctions", GetOpenedContainerRef);
+    vm->RegisterFunction("GetCollisionLayerFromRef", "ANDR_PapyrusFunctions", GetCollisionLayerFromRef);
 
     /*Added by Ivy*/
     vm->RegisterFunction("GetCurrentBookPage", "ANDR_PapyrusFunctions", GetCurrentBookPage);
